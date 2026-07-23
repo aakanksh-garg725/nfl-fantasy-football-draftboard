@@ -61,13 +61,16 @@ export function AvailablePlayersPanel({
       .filter((p) => {
         if (positionFilter !== "ALL" && p.position !== positionFilter)
           return false;
+        // Drafted players are only surfaced when actively searched for —
+        // browsing without a search term should only show who's still available.
+        if (!term && draftedByPlayerId?.has(p.id)) return false;
         if (term && !p.fullName.toLowerCase().includes(term)) return false;
         return true;
       })
       .sort((a, b) =>
         getLastName(a.fullName).localeCompare(getLastName(b.fullName))
       );
-  }, [players, search, positionFilter]);
+  }, [players, search, positionFilter, draftedByPlayerId]);
 
   const rowCount = Math.ceil(filtered.length / columnCount);
 
