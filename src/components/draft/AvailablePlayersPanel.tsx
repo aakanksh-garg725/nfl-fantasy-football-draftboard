@@ -1,13 +1,42 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
 import { POSITIONS, type Player, type Position } from "@/lib/draft/types";
+import { getLastName } from "@/lib/draft/playerName";
 import { PlayerCard } from "./PlayerCard";
+
+// Must match PlayerCard's fixed height (h-20 = 80px) plus the row gap.
+const CARD_HEIGHT = 80;
+const ROW_GAP = 8;
+const ROW_HEIGHT = CARD_HEIGHT + ROW_GAP;
+
+/** Column count mirrors the Tailwind breakpoints the grid used to render at. */
+function useColumnCount() {
+  const [columns, setColumns] = useState(2);
+
+  useEffect(() => {
+    function update() {
+      const width = window.innerWidth;
+      if (width >= 1024) setColumns(5);
+      else if (width >= 768) setColumns(4);
+      else if (width >= 640) setColumns(3);
+      else setColumns(2);
+    }
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  return columns;
+}
 
 export interface AvailablePlayersPanelProps {
   players: Player[];
   byeWeeksByTeam: Map<string, number>;
+  /** playerId -> team name, for players already drafted (shown blurred, not excluded). */
+  draftedByPlayerId?: Map<string, string>;
   canDraft: boolean;
   onDraftPlayer?: (playerId: string) => void;
 }
@@ -15,6 +44,7 @@ export interface AvailablePlayersPanelProps {
 export function AvailablePlayersPanel({
   players,
   byeWeeksByTeam,
+  draftedByPlayerId,
   canDraft,
   onDraftPlayer,
 }: AvailablePlayersPanelProps) {
@@ -22,26 +52,35 @@ export function AvailablePlayersPanel({
   const [positionFilter, setPositionFilter] = useState<Position | "ALL">(
     "ALL"
   );
-
-  // Rendering the full ~1000-player pool as cards at once is enough DOM to
-  // visibly stall the page, and a search/filter is always available to
-  // narrow it — so cap how many cards mount at a time.
-  const MAX_RENDERED = 60;
+  const columnCount = useColumnCount();
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-    return players.filter((p) => {
-      if (positionFilter !== "ALL" && p.position !== positionFilter)
-        return false;
-      if (term && !p.fullName.toLowerCase().includes(term)) return false;
-      return true;
-    });
+    return players
+      .filter((p) => {
+        if (positionFilter !== "ALL" && p.position !== positionFilter)
+          return false;
+        if (term && !p.fullName.toLowerCase().includes(term)) return false;
+        return true;
+      })
+      .sort((a, b) =>
+        getLastName(a.fullName).localeCompare(getLastName(b.fullName))
+      );
   }, [players, search, positionFilter]);
 
-  const visible = filtered.slice(0, MAX_RENDERED);
+  const rowCount = Math.ceil(filtered.length / columnCount);
+
+  // eslint-disable-next-line react-hooks/incompatible-library -- react-compiler is not enabled in this project
+  const rowVirtualizer = useVirtualizer({
+    count: rowCount,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 6,
+  });
 
   return (
-    <div className="flex h-full flex-col gap-3">
+    <div className="flex h-full min-h-0 flex-col gap-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <input
           type="text"
@@ -67,33 +106,60 @@ export function AvailablePlayersPanel({
         </div>
       </div>
 
-      {filtered.length > MAX_RENDERED && (
-        <p className="text-xs text-black/50 dark:text-white/50">
-          Showing {MAX_RENDERED} of {filtered.length} — refine your search or
-          position filter to narrow it down.
-        </p>
-      )}
+      <p className="text-xs text-black/50 dark:text-white/50">
+        {filtered.length} player{filtered.length === 1 ? "" : "s"}
+      </p>
 
-      <div className="grid grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {visible.map((player) => {
-          const byeWeek = player.nflTeam
-            ? (byeWeeksByTeam.get(player.nflTeam) ?? null)
-            : null;
-          return (
-            <PlayerCard
-              key={player.id}
-              player={player}
-              byeWeek={byeWeek}
-              disabled={!canDraft}
-              onClick={
-                onDraftPlayer ? () => onDraftPlayer(player.id) : undefined
-              }
-            />
-          );
-        })}
-        {filtered.length === 0 && (
-          <div className="col-span-full py-8 text-center text-sm text-black/40 dark:text-white/40">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+        {filtered.length === 0 ? (
+          <div className="py-8 text-center text-sm text-black/40 dark:text-white/40">
             No players match.
+          </div>
+        ) : (
+          <div
+            style={{ height: rowVirtualizer.getTotalSize(), position: "relative" }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const start = virtualRow.index * columnCount;
+              const rowPlayers = filtered.slice(start, start + columnCount);
+              return (
+                <div
+                  key={virtualRow.key}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: CARD_HEIGHT,
+                    transform: `translateY(${virtualRow.start}px)`,
+                    display: "grid",
+                    gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+                    gap: "0.5rem",
+                  }}
+                >
+                  {rowPlayers.map((player) => {
+                    const byeWeek = player.nflTeam
+                      ? (byeWeeksByTeam.get(player.nflTeam) ?? null)
+                      : null;
+                    const draftedByTeamName = draftedByPlayerId?.get(player.id);
+                    return (
+                      <PlayerCard
+                        key={player.id}
+                        player={player}
+                        byeWeek={byeWeek}
+                        disabled={!canDraft}
+                        draftedByTeamName={draftedByTeamName}
+                        onClick={
+                          onDraftPlayer
+                            ? () => onDraftPlayer(player.id)
+                            : undefined
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

@@ -13,6 +13,7 @@ interface SleeperPlayer {
   position?: string;
   team?: string | null;
   active?: boolean;
+  depth_chart_position?: string | null;
 }
 
 const FANTASY_POSITIONS = new Set(["QB", "RB", "WR", "TE", "K"]);
@@ -23,6 +24,11 @@ const FANTASY_POSITIONS = new Set(["QB", "RB", "WR", "TE", "K"]);
  * needed. Sleeper already includes one synthetic "DEF" entry per NFL team
  * (player_id = team abbreviation), which we map straight onto our DST rows
  * rather than synthesizing our own.
+ *
+ * Sleeper's `active`/`status` fields are unreliable for long-retired players
+ * (e.g. Le'Veon Bell still shows team="TB", status="Active") — but retired
+ * players consistently have no `depth_chart_position`, while real rostered
+ * players (including rookies) do, so that's used as the real filter.
  */
 export async function POST(request: Request) {
   const secret = request.headers.get("x-admin-secret");
@@ -66,6 +72,7 @@ export async function POST(request: Request) {
     }
 
     if (!player.position || !FANTASY_POSITIONS.has(player.position)) continue;
+    if (player.depth_chart_position == null) continue;
 
     rows.push({
       id: player.player_id,
@@ -94,10 +101,36 @@ export async function POST(request: Request) {
     upserted += batch.length;
   }
 
+  // Remove players that no longer pass the filter (e.g. newly-stale entries)
+  // unless they're already attached to a real pick somewhere.
+  const validIds = new Set(rows.map((r) => r.id));
+  // Supabase caps unranged selects at 1000 rows — explicitly page past that.
+  const { data: existingIds } = await admin
+    .from("players")
+    .select("id")
+    .range(0, 19999);
+  const { data: usedIds } = await admin
+    .from("picks")
+    .select("player_id")
+    .not("player_id", "is", null)
+    .range(0, 19999);
+  const usedIdSet = new Set((usedIds ?? []).map((p) => p.player_id as string));
+
+  const staleIds = (existingIds ?? [])
+    .map((r) => r.id as string)
+    .filter((id) => !validIds.has(id) && !usedIdSet.has(id));
+
+  let removed = 0;
+  for (let i = 0; i < staleIds.length; i += batchSize) {
+    const batch = staleIds.slice(i, i + batchSize);
+    const { error } = await admin.from("players").delete().in("id", batch);
+    if (!error) removed += batch.length;
+  }
+
   const byPosition = rows.reduce<Record<string, number>>((acc, r) => {
     acc[r.position] = (acc[r.position] ?? 0) + 1;
     return acc;
   }, {});
 
-  return NextResponse.json({ imported: upserted, byPosition });
+  return NextResponse.json({ imported: upserted, removedStale: removed, byPosition });
 }

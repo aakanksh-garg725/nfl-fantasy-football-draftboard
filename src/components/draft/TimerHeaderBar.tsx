@@ -14,7 +14,8 @@ export interface TimerHeaderBarProps {
   displaySeconds: number;
   durationSeconds: number;
   round: number;
-  pickNumber: number;
+  /** The pick's position within its round (not the overall pick number). */
+  pickInRound: number;
   onClockTeamName: string;
   nextUpTeamNames: string[];
   previousPick: PreviousPick | null;
@@ -30,7 +31,7 @@ export function TimerHeaderBar({
   displaySeconds,
   durationSeconds,
   round,
-  pickNumber,
+  pickInRound,
   onClockTeamName,
   nextUpTeamNames,
   previousPick,
@@ -98,7 +99,7 @@ export function TimerHeaderBar({
           </div>
         </div>
         <div className="text-center">
-          <div className="text-3xl leading-none font-bold">{pickNumber}</div>
+          <div className="text-3xl leading-none font-bold">{pickInRound}</div>
           <div className="text-[10px] font-semibold tracking-wide text-white/50 uppercase">
             Pick
           </div>

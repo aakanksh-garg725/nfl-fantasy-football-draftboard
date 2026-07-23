@@ -11,7 +11,7 @@ export function Modal({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-xl bg-white p-4 dark:bg-neutral-900">
+      <div className="flex h-[80vh] w-full max-w-2xl flex-col rounded-xl bg-white p-4 dark:bg-neutral-900">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-lg font-bold">{title}</h2>
           <button
@@ -22,7 +22,7 @@ export function Modal({
             Close
           </button>
         </div>
-        <div className="overflow-y-auto">{children}</div>
+        <div className="min-h-0 flex-1">{children}</div>
       </div>
     </div>
   );

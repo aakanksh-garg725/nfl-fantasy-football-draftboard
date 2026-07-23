@@ -22,7 +22,7 @@ export function EmptyPickCell({
       <button
         type="button"
         onClick={onClick}
-        className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+        className="flex h-20 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
       >
         <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
         <span className="text-xs font-bold tracking-wide uppercase">
@@ -37,7 +37,7 @@ export function EmptyPickCell({
       <button
         type="button"
         onClick={onClick}
-        className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+        className="flex h-20 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400"
         title="Skipped — click to fill in once known"
       >
         <span className="text-xs font-bold tracking-wide uppercase">
@@ -53,7 +53,7 @@ export function EmptyPickCell({
   return (
     <div
       className={clsx(
-        "flex aspect-[4/3] w-full items-center justify-center rounded-lg border border-black/5 bg-black/5 text-sm text-black/30 dark:border-white/5 dark:bg-white/5 dark:text-white/25"
+        "flex h-20 w-full items-center justify-center rounded-lg border border-black/5 bg-black/5 text-sm text-black/30 dark:border-white/5 dark:bg-white/5 dark:text-white/25"
       )}
     >
       {round}.{pickInRound}

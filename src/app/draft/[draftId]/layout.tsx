@@ -68,7 +68,7 @@ export default async function DraftLayout({
         myTeamId: memberRow?.team_id ?? null,
       }}
     >
-      <div className="flex min-h-screen flex-col">
+      <div className="flex h-screen flex-col overflow-hidden">
         <DraftNav draftId={draftId} isCommissioner={memberRow?.role === "commissioner"} />
         {children}
       </div>

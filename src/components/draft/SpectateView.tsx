@@ -118,7 +118,7 @@ export function SpectateView({
         displaySeconds={displaySeconds}
         durationSeconds={timer.durationSeconds}
         round={currentPick?.round ?? draft.roundCount}
-        pickNumber={currentPick?.overallPickNumber ?? draft.teamCount * draft.roundCount}
+        pickInRound={currentPick?.pickInRound ?? draft.teamCount}
         onClockTeamName={onClockTeam?.teamName ?? "Draft complete"}
         nextUpTeamNames={nextUpTeamNames}
         previousPick={

@@ -30,14 +30,13 @@ export function DraftBoardGrid({
   const rounds = Array.from({ length: roundCount }, (_, i) => i + 1);
 
   return (
-    <div className="w-full overflow-x-auto">
-      <div
-        className="grid min-w-max gap-1.5 p-2"
-        style={{
-          gridTemplateColumns: `48px repeat(${sortedTeams.length}, minmax(130px, 1fr))`,
-        }}
-      >
-        <div className="sticky left-0" />
+    <div
+      className="grid w-full gap-1 p-2"
+      style={{
+        gridTemplateColumns: `28px repeat(${sortedTeams.length}, minmax(0, 1fr))`,
+      }}
+    >
+      <div />
         {sortedTeams.map((team) => (
           <div
             key={team.id}
@@ -59,7 +58,6 @@ export function DraftBoardGrid({
             onEmptyCellClick={onEmptyCellClick}
           />
         ))}
-      </div>
     </div>
   );
 }

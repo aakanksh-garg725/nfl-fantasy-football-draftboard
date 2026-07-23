@@ -54,14 +54,20 @@ export default function PlayersPage() {
     .slice(0, 3)
     .map((p) => teams.find((t) => t.id === p.teamId)?.teamName ?? "");
 
-  const draftedPlayerIds = new Set(
-    picks.filter((p) => p.status === "made" && p.playerId).map((p) => p.playerId)
+  const allPlayers = useMemo(
+    () => Array.from(playersById.values()),
+    [playersById]
   );
-  const undraftedPlayers = useMemo(
-    () => Array.from(playersById.values()).filter((p) => !draftedPlayerIds.has(p.id)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [playersById, picks]
-  );
+  const draftedByPlayerId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of picks) {
+      if (p.status === "made" && p.playerId) {
+        const team = teams.find((t) => t.id === p.teamId);
+        if (team) map.set(p.playerId, team.teamName);
+      }
+    }
+    return map;
+  }, [picks, teams]);
 
   const canDraft = Boolean(
     currentPick && (isCommissioner || currentPick.teamId === myTeamId)
@@ -74,7 +80,7 @@ export default function PlayersPage() {
         displaySeconds={displaySeconds}
         durationSeconds={durationSeconds}
         round={currentPick?.round ?? draft.roundCount}
-        pickNumber={currentPick?.overallPickNumber ?? draft.teamCount * draft.roundCount}
+        pickInRound={currentPick?.pickInRound ?? draft.teamCount}
         onClockTeamName={onClockTeam?.teamName ?? "Draft complete"}
         nextUpTeamNames={nextUpTeamNames}
         previousPick={
@@ -111,10 +117,11 @@ export default function PlayersPage() {
         </div>
       )}
 
-      <div className="flex-1 overflow-auto p-3">
+      <div className="flex min-h-0 flex-1 flex-col p-3">
         <AvailablePlayersPanel
-          players={undraftedPlayers}
+          players={allPlayers}
           byeWeeksByTeam={byeWeeksByTeam}
+          draftedByPlayerId={draftedByPlayerId}
           canDraft={canDraft}
           onDraftPlayer={(playerId) => makePick(playerId)}
         />

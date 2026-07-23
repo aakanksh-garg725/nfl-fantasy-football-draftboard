@@ -54,7 +54,7 @@ export default function DemoPage() {
         displaySeconds={displaySeconds}
         durationSeconds={durationSeconds}
         round={currentPick.round}
-        pickNumber={currentPick.overallPickNumber}
+        pickInRound={currentPick.pickInRound}
         onClockTeamName={onClockTeam.teamName}
         nextUpTeamNames={nextUpTeamNames}
         previousPick={{
