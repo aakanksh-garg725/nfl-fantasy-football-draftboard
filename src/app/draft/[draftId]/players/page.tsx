@@ -1,12 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useDraft } from "@/components/draft/DraftProvider";
 import { TimerHeaderBar } from "@/components/draft/TimerHeaderBar";
 import { AvailablePlayersPanel } from "@/components/draft/AvailablePlayersPanel";
 import { TimerEditDialog } from "@/components/draft/TimerEditDialog";
 
 export default function PlayersPage() {
+  const router = useRouter();
   const {
     draft,
     teams,
@@ -123,7 +125,10 @@ export default function PlayersPage() {
           byeWeeksByTeam={byeWeeksByTeam}
           draftedByPlayerId={draftedByPlayerId}
           canDraft={canDraft}
-          onDraftPlayer={(playerId) => makePick(playerId)}
+          onDraftPlayer={async (playerId) => {
+            const ok = await makePick(playerId);
+            if (ok) router.push(`/draft/${draft.id}/board`);
+          }}
         />
       </div>
 
