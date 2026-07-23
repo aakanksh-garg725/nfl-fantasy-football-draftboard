@@ -163,22 +163,28 @@ export function DraftProvider({
     return () => clearInterval(interval);
   }, [timer, clockOffsetMs]);
 
-  // Auto-skip: fire once per expiry, guarded so it doesn't refire every tick.
-  const skipAttemptedKeyRef = useRef<string | null>(null);
+  // Auto-skip: retries every tick until it succeeds or the timer state
+  // actually moves on. Only an in-flight call is guarded against — a failed
+  // call (network blip, transient auth hiccup, a racing client already
+  // handling it) must NOT permanently block future attempts, or a single
+  // dropped request leaves the draft stuck until someone refreshes.
+  const skipInFlightRef = useRef(false);
   useEffect(() => {
-    const expiryKey = `${timer.status}:${timer.startedAt}:${timer.remainingSeconds}`;
     if (
       timer.status === "running" &&
       displaySeconds <= 0 &&
-      skipAttemptedKeyRef.current !== expiryKey
+      !skipInFlightRef.current
     ) {
-      skipAttemptedKeyRef.current = expiryKey;
-      supabase.rpc("skip_expired_pick", { p_draft_id: initial.draft.id }).then(
-        ({ error }) => {
-          // Racing clients / already-resolved picks are expected — ignore.
-          if (error) return;
+      skipInFlightRef.current = true;
+      (async () => {
+        try {
+          await supabase.rpc("skip_expired_pick", { p_draft_id: initial.draft.id });
+        } catch {
+          // Ignore — the next tick retries if the pick is still expired.
+        } finally {
+          skipInFlightRef.current = false;
         }
-      );
+      })();
     }
   }, [displaySeconds, timer, supabase, initial.draft.id]);
 
