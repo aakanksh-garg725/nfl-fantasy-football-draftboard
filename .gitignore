@@ -39,6 +39,9 @@ yarn-error.log*
 # claude code local state
 .claude
 
+# local reference material, not part of the app
+/reference
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
