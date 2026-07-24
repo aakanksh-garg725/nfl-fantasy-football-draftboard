@@ -4,10 +4,13 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
-  ROUND_COUNT_MAX,
-  ROUND_COUNT_MIN,
+  DEFAULT_ROSTER_COUNTS,
+  ROSTER_SLOTS,
+  SCORING_FORMAT_OPTIONS,
   TEAM_COUNT_OPTIONS,
   TIMER_DURATION_OPTIONS,
+  type RosterCounts,
+  type ScoringFormat,
   type TeamCountOption,
   type TimerDurationOption,
 } from "@/lib/draft/types";
@@ -18,13 +21,19 @@ export default function NewDraftPage() {
   const [name, setName] = useState("");
   const [season, setSeason] = useState(2026);
   const [teamCount, setTeamCount] = useState<TeamCountOption>(10);
-  const [roundCount, setRoundCount] = useState(15);
+  const [rosterCounts, setRosterCounts] = useState<RosterCounts>(DEFAULT_ROSTER_COUNTS);
+  const [scoringFormat, setScoringFormat] = useState<ScoringFormat>("ppr");
   const [timerSeconds, setTimerSeconds] = useState<TimerDurationOption>(90);
   const [teamNames, setTeamNames] = useState<string[]>(
     Array.from({ length: 10 }, () => "")
   );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const roundCount = useMemo(
+    () => ROSTER_SLOTS.reduce((sum, slot) => sum + rosterCounts[slot.key], 0),
+    [rosterCounts]
+  );
 
   const teamNameSlots = useMemo(() => {
     const next = [...teamNames];
@@ -42,7 +51,17 @@ export default function NewDraftPage() {
       p_name: name,
       p_season: season,
       p_team_count: teamCount,
-      p_round_count: roundCount,
+      p_scoring_format: scoringFormat,
+      p_roster_qb: rosterCounts.qb,
+      p_roster_rb: rosterCounts.rb,
+      p_roster_wr: rosterCounts.wr,
+      p_roster_te: rosterCounts.te,
+      p_roster_flex_rb_wr: rosterCounts.flexRbWr,
+      p_roster_flex_wr_rb_te: rosterCounts.flexWrRbTe,
+      p_roster_superflex: rosterCounts.superflex,
+      p_roster_k: rosterCounts.k,
+      p_roster_dst: rosterCounts.dst,
+      p_roster_bench: rosterCounts.bench,
       p_pick_timer_seconds_default: timerSeconds,
       p_team_names: teamNameSlots.map((n) => n.trim() || null),
     });
@@ -103,18 +122,55 @@ export default function NewDraftPage() {
           </div>
         </div>
 
-        <label className="text-sm">
-          Number of rounds ({ROUND_COUNT_MIN}–{ROUND_COUNT_MAX})
-          <input
-            type="number"
-            required
-            min={ROUND_COUNT_MIN}
-            max={ROUND_COUNT_MAX}
-            value={roundCount}
-            onChange={(e) => setRoundCount(Number(e.target.value))}
-            className="mt-1 w-full rounded-md border border-black/10 bg-transparent px-3 py-2 dark:border-white/10"
-          />
-        </label>
+        <fieldset className="text-sm">
+          <legend className="mb-1">Roster ({roundCount} rounds total)</legend>
+          <div className="grid grid-cols-2 gap-2">
+            {ROSTER_SLOTS.map((slot) => (
+              <label key={slot.key} className="flex flex-col gap-1">
+                {slot.label}
+                <select
+                  value={rosterCounts[slot.key]}
+                  onChange={(e) =>
+                    setRosterCounts((prev) => ({
+                      ...prev,
+                      [slot.key]: Number(e.target.value),
+                    }))
+                  }
+                  className="rounded-md border border-black/10 bg-transparent px-3 py-2 dark:border-white/10"
+                >
+                  {Array.from(
+                    { length: slot.max - ("min" in slot ? slot.min : 0) + 1 },
+                    (_, i) => i + ("min" in slot ? slot.min : 0)
+                  ).map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <div className="text-sm">
+          Scoring format
+          <div className="mt-1 flex gap-2">
+            {SCORING_FORMAT_OPTIONS.map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setScoringFormat(value)}
+                className={`flex-1 rounded-md border py-2 font-bold ${
+                  scoringFormat === value
+                    ? "border-emerald-500 bg-emerald-500 text-white"
+                    : "border-black/10 dark:border-white/10"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="text-sm">
           Pick timer

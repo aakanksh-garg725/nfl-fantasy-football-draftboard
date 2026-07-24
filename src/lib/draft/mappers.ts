@@ -24,6 +24,17 @@ export function mapDraftRow(row: {
   pick_timer_seconds_default: number;
   current_overall_pick: number;
   spectator_enabled: boolean;
+  scoring_format: string;
+  roster_qb: number;
+  roster_rb: number;
+  roster_wr: number;
+  roster_te: number;
+  roster_flex_rb_wr: number;
+  roster_flex_wr_rb_te: number;
+  roster_superflex: number;
+  roster_k: number;
+  roster_dst: number;
+  roster_bench: number;
 }): DraftSettings {
   return {
     id: row.id,
@@ -37,6 +48,19 @@ export function mapDraftRow(row: {
       row.pick_timer_seconds_default as DraftSettings["pickTimerSecondsDefault"],
     currentOverallPick: row.current_overall_pick,
     spectatorEnabled: row.spectator_enabled,
+    scoringFormat: row.scoring_format as DraftSettings["scoringFormat"],
+    rosterCounts: {
+      qb: row.roster_qb,
+      rb: row.roster_rb,
+      wr: row.roster_wr,
+      te: row.roster_te,
+      flexRbWr: row.roster_flex_rb_wr,
+      flexWrRbTe: row.roster_flex_wr_rb_te,
+      superflex: row.roster_superflex,
+      k: row.roster_k,
+      dst: row.roster_dst,
+      bench: row.roster_bench,
+    },
   };
 }
 
