@@ -33,3 +33,16 @@ export function positionCardBackground(position: Position): string {
 export function positionAccentColor(position: Position): string {
   return `var(${POSITION_COLOR_VAR[position]})`;
 }
+
+/**
+ * Fill for a small solid chip that carries dark text on it.
+ *
+ * Lifted toward white rather than using the raw accent: the palette spans a
+ * wide lightness range (bright TE orange down to deep QB blue), so no single
+ * text colour reads on all six at full saturation. Pulling every hue up to a
+ * common lightness lets black text hold across the set while the position is
+ * still obvious at a glance.
+ */
+export function positionBadgeBackground(position: Position): string {
+  return `color-mix(in oklab, var(${POSITION_COLOR_VAR[position]}) 72%, white)`;
+}

@@ -8,11 +8,11 @@
      Base hues from the validated dataviz palette; card fills use light tints
      via color-mix so text stays high-contrast across every position. */
   --pos-qb: #2a78d6;
-  --pos-rb: #eb6834;
+  --pos-rb: #f43f2e;
   --pos-wr: #1baf7a;
-  --pos-te: #eda100;
+  --pos-te: #ffa31a;
   --pos-k: #e87ba4;
-  --pos-dst: #008300;
+  --pos-dst: #7f56d9;
 }
 
 @theme inline {
@@ -40,4 +40,80 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Whammy popup (components/draft/WhammyOverlay.tsx): a quick pop-in, and a
+   bar that drains over the five seconds the dare stays on screen. */
+@keyframes whammy-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes whammy-drain {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Recent-picks ticker (components/draft/RecentPicksTicker.tsx). Two identical
+   laps sit side by side inside the track; sliding the pair from 0 to -50% walks
+   the second lap's start position onto the first's, so the hand-off lands on a
+   frame identical to the one it started from and the loop reads as continuous
+   right-to-left motion rather than a rewind. */
+@keyframes ticker-rotate {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.ticker-viewport {
+  overflow: hidden;
+}
+
+.ticker-track {
+  animation-name: ticker-rotate;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* So you can stop the strip to actually read a pick instead of chasing it. */
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes whammy-pop-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Drop the motion, and with it the duplicate lap that only existed to serve
+     the loop — then hand the strip back to the user as a normal scroller. */
+  .ticker-track {
+    animation: none;
+  }
+
+  .ticker-duplicate {
+    display: none;
+  }
+
+  .ticker-viewport {
+    overflow-x: auto;
+  }
 }

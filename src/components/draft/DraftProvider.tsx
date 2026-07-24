@@ -11,6 +11,8 @@ import {
 } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useServerClockOffset } from "@/lib/hooks/useServerClockOffset";
+import { useWhammy, WHAMMY_VISIBLE_MS } from "@/lib/hooks/useWhammy";
+import { WhammyOverlay } from "./WhammyOverlay";
 import { deriveRemainingSeconds } from "@/lib/draft/timer";
 import {
   mapDraftRow,
@@ -247,6 +249,33 @@ export function DraftProvider({
     [supabase, initial.draft.id]
   );
 
+  // Once-per-round whammy, shown on every screen in the draft at once.
+  const { whammy, dismiss: dismissWhammy } = useWhammy({
+    draftId: initial.draft.id,
+    currentOverallPick: draft.currentOverallPick,
+    teams: initial.teams,
+  });
+
+  // Hold the pick clock while the dare is up, so the team on the clock doesn't
+  // burn five seconds nobody is watching the board for. Every member client
+  // fires this; the RPC's guards mean only the first one lands (same
+  // any-client pattern as skip_expired_pick above). Spectators don't run this
+  // provider, so a spectator screen never attempts it.
+  useEffect(() => {
+    if (!whammy) return;
+    // Must be awaited: supabase's query builder is lazy and only issues the
+    // request from .then(), so a bare `supabase.rpc(...)` never sends at all.
+    (async () => {
+      const { error } = await supabase.rpc("hold_timer_for_whammy", {
+        p_draft_id: initial.draft.id,
+        p_hold_seconds: Math.round(WHAMMY_VISIBLE_MS / 1000),
+      });
+      // Losing the race to another client isn't an error (the RPC just matches
+      // no row), so anything that does come back is worth surfacing.
+      if (error) setLastError(error.message);
+    })();
+  }, [whammy, supabase, initial.draft.id]);
+
   const value: DraftContextValue = {
     draft,
     teams: initial.teams,
@@ -269,5 +298,10 @@ export function DraftProvider({
     editTimer,
   };
 
-  return <DraftContext.Provider value={value}>{children}</DraftContext.Provider>;
+  return (
+    <DraftContext.Provider value={value}>
+      {children}
+      <WhammyOverlay whammy={whammy} onDismiss={dismissWhammy} />
+    </DraftContext.Provider>
+  );
 }

@@ -87,13 +87,7 @@ export default function PlayersPage() {
         nextUpTeamNames={nextUpTeamNames}
         previousPick={
           previousPlayer && previousTeam
-            ? {
-                player: previousPlayer,
-                byeWeek: previousPlayer.nflTeam
-                  ? (byeWeeksByTeam.get(previousPlayer.nflTeam) ?? null)
-                  : null,
-                teamName: previousTeam.teamName,
-              }
+            ? { player: previousPlayer, teamName: previousTeam.teamName }
             : null
         }
         isCommissioner={isCommissioner}
