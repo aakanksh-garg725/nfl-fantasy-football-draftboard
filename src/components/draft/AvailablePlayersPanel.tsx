@@ -12,8 +12,15 @@ const CARD_HEIGHT = 80;
 const ROW_GAP = 8;
 const ROW_HEIGHT = CARD_HEIGHT + ROW_GAP;
 
-/** Column count mirrors the Tailwind breakpoints the grid used to render at. */
-function useColumnCount() {
+/**
+ * Column count, mirroring the Tailwind breakpoints the grid used to render at.
+ *
+ * Capped by `maxColumns` because the viewport only describes the panel's width
+ * when it's the page. Inside the commissioner's ~640px pick modal the same
+ * breakpoints asked for five columns on any desktop, squeezing cards to ~120px
+ * and crushing the name against the team/position/bye labels.
+ */
+function useColumnCount(maxColumns: number) {
   const [columns, setColumns] = useState(2);
 
   useEffect(() => {
@@ -29,7 +36,7 @@ function useColumnCount() {
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  return columns;
+  return Math.min(columns, maxColumns);
 }
 
 export interface AvailablePlayersPanelProps {
@@ -39,6 +46,10 @@ export interface AvailablePlayersPanelProps {
   draftedByPlayerId?: Map<string, string>;
   canDraft: boolean;
   onDraftPlayer?: (playerId: string) => void;
+  /** Ceiling on grid columns, for callers that render the panel narrower than the viewport. */
+  maxColumns?: number;
+  /** Which position tab is selected when the panel first mounts. Defaults to "ALL". */
+  initialPositionFilter?: Position | "ALL";
 }
 
 export function AvailablePlayersPanel({
@@ -47,13 +58,15 @@ export function AvailablePlayersPanel({
   draftedByPlayerId,
   canDraft,
   onDraftPlayer,
+  maxColumns = 5,
+  initialPositionFilter = "ALL",
 }: AvailablePlayersPanelProps) {
   const [search, setSearch] = useState("");
   const [positionFilter, setPositionFilter] = useState<Position | "ALL">(
-    "ALL"
+    initialPositionFilter
   );
-  const columnCount = useColumnCount();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const columnCount = useColumnCount(maxColumns);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -152,6 +165,7 @@ export function AvailablePlayersPanel({
                         byeWeek={byeWeek}
                         disabled={!canDraft}
                         draftedByTeamName={draftedByTeamName}
+                        variant="pool"
                         onClick={
                           onDraftPlayer
                             ? () => onDraftPlayer(player.id)

@@ -5,8 +5,11 @@ import { createClient } from "@/lib/supabase/client";
 import { useServerClockOffset } from "@/lib/hooks/useServerClockOffset";
 import { deriveRemainingSeconds } from "@/lib/draft/timer";
 import { mapDraftRow, mapPickRow, mapTimerRow } from "@/lib/draft/mappers";
+import { useWhammy } from "@/lib/hooks/useWhammy";
+import { useDraftSoundCues } from "@/lib/hooks/useDraftSoundCues";
 import { TimerHeaderBar } from "./TimerHeaderBar";
 import { DraftBoardGrid } from "./DraftBoardGrid";
+import { WhammyOverlay } from "./WhammyOverlay";
 import type {
   DraftSettings,
   DraftTeam,
@@ -91,6 +94,21 @@ export function SpectateView({
     return () => clearInterval(interval);
   }, [timer, clockOffsetMs]);
 
+  // The shared big screen gets the whammy too, in sync with the team screens.
+  const { whammy, dismiss: dismissWhammy } = useWhammy({
+    draftId: draft.id,
+    currentOverallPick: draft.currentOverallPick,
+    teams,
+  });
+
+  // …and the opening chime and final-countdown beeps, so the room's display
+  // sounds them in step with every drafter's screen.
+  useDraftSoundCues({
+    timerStatus: timer.status,
+    displaySeconds,
+    currentOverallPick: draft.currentOverallPick,
+  });
+
   const picks = Array.from(picksById.values());
   const sortedPicks = [...picks].sort((a, b) => a.overallPickNumber - b.overallPickNumber);
   const currentPick = sortedPicks.find((p) => p.overallPickNumber === draft.currentOverallPick);
@@ -123,13 +141,7 @@ export function SpectateView({
         nextUpTeamNames={nextUpTeamNames}
         previousPick={
           previousPlayer && previousTeam
-            ? {
-                player: previousPlayer,
-                byeWeek: previousPlayer.nflTeam
-                  ? (byeWeeksByTeam.get(previousPlayer.nflTeam) ?? null)
-                  : null,
-                teamName: previousTeam.teamName,
-              }
+            ? { player: previousPlayer, teamName: previousTeam.teamName }
             : null
         }
         isCommissioner={false}
@@ -144,6 +156,7 @@ export function SpectateView({
           currentOverallPick={draft.currentOverallPick}
         />
       </div>
+      <WhammyOverlay whammy={whammy} onDismiss={dismissWhammy} />
     </div>
   );
 }

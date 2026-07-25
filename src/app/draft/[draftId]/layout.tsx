@@ -9,6 +9,7 @@ import {
 } from "@/lib/draft/mappers";
 import { DraftProvider } from "@/components/draft/DraftProvider";
 import { DraftNav } from "@/components/draft/DraftNav";
+import { TurnBanner } from "@/components/draft/TurnBanner";
 
 export default async function DraftLayout({
   children,
@@ -70,6 +71,11 @@ export default async function DraftLayout({
     >
       <div className="flex h-screen flex-col overflow-hidden">
         <DraftNav draftId={draftId} isCommissioner={memberRow?.role === "commissioner"} />
+        {/* Sits in the flex column rather than floating over it: when your pick
+            is close the bar is worth the few pixels, and it renders nothing the
+            rest of the time. Above {children} so it's on the board and the
+            player pool alike. */}
+        <TurnBanner />
         {children}
       </div>
     </DraftProvider>

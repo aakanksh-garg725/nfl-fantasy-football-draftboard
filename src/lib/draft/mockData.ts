@@ -26,25 +26,29 @@ export const mockTeams: DraftTeam[] = TEAM_NAMES.map((name, i) => ({
   teamLogoUrl: null,
 }));
 
+/** Mirrors the photo_url the Sleeper import writes, so the demo shows real headshots. */
+const headshot = (sleeperId: string) =>
+  `https://sleepercdn.com/content/nfl/players/${sleeperId}.jpg`;
+
 const SAMPLE_PLAYERS: Omit<Player, "id">[] = [
-  { fullName: "Jahmyr Gibbs", position: "RB", nflTeam: "DET", active: true, photoUrl: null },
-  { fullName: "Bijan Robinson", position: "RB", nflTeam: "ATL", active: true, photoUrl: null },
-  { fullName: "Puka Nacua", position: "WR", nflTeam: "LAR", active: true, photoUrl: null },
-  { fullName: "Ja'Marr Chase", position: "WR", nflTeam: "CIN", active: true, photoUrl: null },
-  { fullName: "Jonathan Taylor", position: "RB", nflTeam: "IND", active: true, photoUrl: null },
-  { fullName: "Jaxon Smith-Njigba", position: "WR", nflTeam: "SEA", active: true, photoUrl: null },
-  { fullName: "Christian McCaffrey", position: "RB", nflTeam: "SF", active: true, photoUrl: null },
-  { fullName: "James Cook", position: "RB", nflTeam: "BUF", active: true, photoUrl: null },
-  { fullName: "Amon-Ra St. Brown", position: "WR", nflTeam: "DET", active: true, photoUrl: null },
-  { fullName: "CeeDee Lamb", position: "WR", nflTeam: "DAL", active: true, photoUrl: null },
-  { fullName: "Derrick Henry", position: "RB", nflTeam: "BAL", active: true, photoUrl: null },
-  { fullName: "Ashton Jeanty", position: "RB", nflTeam: "LV", active: true, photoUrl: null },
-  { fullName: "Patrick Mahomes", position: "QB", nflTeam: "KC", active: true, photoUrl: null },
-  { fullName: "Josh Allen", position: "QB", nflTeam: "BUF", active: true, photoUrl: null },
-  { fullName: "Travis Kelce", position: "TE", nflTeam: "KC", active: true, photoUrl: null },
-  { fullName: "Sam LaPorta", position: "TE", nflTeam: "DET", active: true, photoUrl: null },
-  { fullName: "Harrison Butker", position: "K", nflTeam: "KC", active: true, photoUrl: null },
-  { fullName: "Justin Tucker", position: "K", nflTeam: "BAL", active: true, photoUrl: null },
+  { fullName: "Jahmyr Gibbs", position: "RB", nflTeam: "DET", active: true, photoUrl: headshot("9221") },
+  { fullName: "Bijan Robinson", position: "RB", nflTeam: "ATL", active: true, photoUrl: headshot("9509") },
+  { fullName: "Puka Nacua", position: "WR", nflTeam: "LAR", active: true, photoUrl: headshot("9493") },
+  { fullName: "Ja'Marr Chase", position: "WR", nflTeam: "CIN", active: true, photoUrl: headshot("7564") },
+  { fullName: "Jonathan Taylor", position: "RB", nflTeam: "IND", active: true, photoUrl: headshot("6813") },
+  { fullName: "Jaxon Smith-Njigba", position: "WR", nflTeam: "SEA", active: true, photoUrl: headshot("9488") },
+  { fullName: "Christian McCaffrey", position: "RB", nflTeam: "SF", active: true, photoUrl: headshot("4034") },
+  { fullName: "James Cook", position: "RB", nflTeam: "BUF", active: true, photoUrl: headshot("8138") },
+  { fullName: "Amon-Ra St. Brown", position: "WR", nflTeam: "DET", active: true, photoUrl: headshot("7547") },
+  { fullName: "CeeDee Lamb", position: "WR", nflTeam: "DAL", active: true, photoUrl: headshot("6786") },
+  { fullName: "Derrick Henry", position: "RB", nflTeam: "BAL", active: true, photoUrl: headshot("3198") },
+  { fullName: "Ashton Jeanty", position: "RB", nflTeam: "LV", active: true, photoUrl: headshot("12527") },
+  { fullName: "Patrick Mahomes", position: "QB", nflTeam: "KC", active: true, photoUrl: headshot("4046") },
+  { fullName: "Josh Allen", position: "QB", nflTeam: "BUF", active: true, photoUrl: headshot("4984") },
+  { fullName: "Travis Kelce", position: "TE", nflTeam: "KC", active: true, photoUrl: headshot("1466") },
+  { fullName: "Sam LaPorta", position: "TE", nflTeam: "DET", active: true, photoUrl: headshot("10859") },
+  { fullName: "Harrison Butker", position: "K", nflTeam: "KC", active: true, photoUrl: headshot("4227") },
+  { fullName: "Justin Tucker", position: "K", nflTeam: "BAL", active: true, photoUrl: headshot("1264") },
   { fullName: "49ers Defense", position: "DST", nflTeam: "SF", active: true, photoUrl: null },
   { fullName: "Cowboys Defense", position: "DST", nflTeam: "DAL", active: true, photoUrl: null },
 ];

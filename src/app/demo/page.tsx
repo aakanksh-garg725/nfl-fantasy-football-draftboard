@@ -59,9 +59,6 @@ export default function DemoPage() {
         nextUpTeamNames={nextUpTeamNames}
         previousPick={{
           player: previousPlayer,
-          byeWeek: previousPlayer.nflTeam
-            ? (mockByeWeeksByTeam.get(previousPlayer.nflTeam) ?? null)
-            : null,
           teamName: previousTeam.teamName,
         }}
         isCommissioner

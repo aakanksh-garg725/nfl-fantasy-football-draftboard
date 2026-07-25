@@ -21,7 +21,14 @@ export function deriveRemainingSeconds(
   }
   const serverNowMs = nowMs - clockOffsetMs;
   const startedAtMs = new Date(timer.startedAt).getTime();
-  const elapsedSeconds = Math.floor((serverNowMs - startedAtMs) / 1000);
+  // Floored at zero because a whammy hold (hold_timer_for_whammy, migration
+  // 0008) parks started_at in the future: until it passes, elapsed is negative
+  // and the countdown should sit frozen at the full duration rather than
+  // reading above it.
+  const elapsedSeconds = Math.max(
+    0,
+    Math.floor((serverNowMs - startedAtMs) / 1000)
+  );
   return Math.max(0, timer.remainingSeconds - elapsedSeconds);
 }
 

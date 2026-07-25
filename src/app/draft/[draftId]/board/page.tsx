@@ -5,6 +5,7 @@ import { useDraft } from "@/components/draft/DraftProvider";
 import { TimerHeaderBar } from "@/components/draft/TimerHeaderBar";
 import { DraftBoardGrid } from "@/components/draft/DraftBoardGrid";
 import { AvailablePlayersPanel } from "@/components/draft/AvailablePlayersPanel";
+import { RecentPicksTicker } from "@/components/draft/RecentPicksTicker";
 import { TimerEditDialog } from "@/components/draft/TimerEditDialog";
 import { Modal } from "@/components/ui/Modal";
 import type { Pick } from "@/lib/draft/types";
@@ -100,13 +101,7 @@ export default function BoardPage() {
         nextUpTeamNames={nextUpTeamNames}
         previousPick={
           previousPlayer && previousTeam
-            ? {
-                player: previousPlayer,
-                byeWeek: previousPlayer.nflTeam
-                  ? (byeWeeksByTeam.get(previousPlayer.nflTeam) ?? null)
-                  : null,
-                teamName: previousTeam.teamName,
-              }
+            ? { player: previousPlayer, teamName: previousTeam.teamName }
             : null
         }
         isCommissioner={isCommissioner}
@@ -137,6 +132,10 @@ export default function BoardPage() {
         />
       </div>
 
+      {/* Outside the scrolling board so it stays pinned to the bottom of the
+          screen, the way a broadcast ticker sits below the play. */}
+      <RecentPicksTicker />
+
       {editingPick && (
         <Modal
           title={`Round ${editingPick.round}, Pick ${editingPick.pickInRound} — select player`}
@@ -148,6 +147,10 @@ export default function BoardPage() {
             draftedByPlayerId={draftedByPlayerId}
             canDraft
             onDraftPlayer={handleSelectPlayerForEditingPick}
+            // The modal caps out at max-w-2xl, so the viewport's idea of how
+            // many columns fit is far too generous here.
+            maxColumns={3}
+            initialPositionFilter="ALL"
           />
         </Modal>
       )}

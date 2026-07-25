@@ -71,7 +71,7 @@ export default function NewDraftPage() {
       setError(error.message);
       return;
     }
-    router.push(`/draft/${data}/settings`);
+    router.push(`/draft/${data}/board`);
   }
 
   return (
