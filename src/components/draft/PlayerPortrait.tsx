@@ -37,6 +37,18 @@ const FACE_FILL: Record<PortraitShape, number> = {
 export type PortraitShape = "circle" | "square";
 
 /**
+ * How many times to re-request a headshot that errors before giving up on it.
+ *
+ * The first hit on a cold image optimizer — or a one-off network blip — can
+ * fail on an image whose source is perfectly fine, and that failure lands
+ * disproportionately at the start of a draft when nothing has been fetched yet.
+ * A couple of remount-and-retry passes catches the transient case; a genuinely
+ * missing headshot (Sleeper's 403) still settles onto initials, just a beat
+ * later.
+ */
+const MAX_RETRIES = 2;
+
+/**
  * A player's face, or their initials when there's no usable image.
  *
  * Sleeper hands back a 403 for anyone it has no photo of, and the row's
@@ -59,7 +71,19 @@ export function PlayerPortrait({
   shape?: PortraitShape;
   className?: string;
 }) {
-  const [failed, setFailed] = useState(false);
+  // The load state belongs to a specific url. This slot is reused across picks
+  // (the header shows one portrait whose player changes every selection), so a
+  // `failed` latched by one player's missing headshot must never carry over and
+  // blank out the next player's face — which is exactly what a bare `failed`
+  // boolean did, turning a single early error into "no portraits for the rest
+  // of the draft." Comparing the stored url during render resets on the same
+  // commit the prop changes (React's reset-state-on-prop pattern).
+  const [load, setLoad] = useState<{
+    url: string | null;
+    attempt: number;
+    failed: boolean;
+  }>({ url, attempt: 0, failed: false });
+  if (load.url !== url) setLoad({ url, attempt: 0, failed: false });
 
   // Scale the whole frame up until the face alone is FACE_FILL of the box, then
   // shift it so the face's midpoint — not the frame's — lands on the box's
@@ -83,12 +107,13 @@ export function PlayerPortrait({
         className
       )}
     >
-      {url && !failed ? (
+      {url && !load.failed ? (
         <Image
-          // Keyed by url so a player swapping into this slot during virtualized
-          // scrolling re-attempts its own image instead of inheriting a
-          // previous occupant's failure.
-          key={url}
+          // Keyed by url + attempt: url so a player swapping into this slot
+          // re-attempts its own image instead of inheriting a previous
+          // occupant's; attempt so an error remounts a fresh element and
+          // re-requests rather than staring at the failed one.
+          key={`${url}#${load.attempt}`}
           src={url}
           alt=""
           width={imgWidth}
@@ -97,7 +122,13 @@ export function PlayerPortrait({
           // on screen — the default lazy loading has nothing left to defer and
           // its intersection check just delays the face appearing.
           loading="eager"
-          onError={() => setFailed(true)}
+          onError={() =>
+            setLoad((s) =>
+              s.attempt < MAX_RETRIES
+                ? { ...s, attempt: s.attempt + 1 }
+                : { ...s, failed: true }
+            )
+          }
           style={{ top: imgTop }}
           className="absolute left-1/2 max-w-none -translate-x-1/2"
         />

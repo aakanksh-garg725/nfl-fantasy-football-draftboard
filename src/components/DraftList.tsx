@@ -21,6 +21,8 @@ export function DraftList({ rows }: { rows: DraftListRow[] }) {
   const router = useRouter();
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmingLeaveId, setConfirmingLeaveId] = useState<string | null>(null);
+  const [leavingId, setLeavingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleDelete(draftId: string) {
@@ -30,6 +32,20 @@ export function DraftList({ rows }: { rows: DraftListRow[] }) {
     const { error } = await supabase.rpc("delete_draft", { p_draft_id: draftId });
     setDeletingId(null);
     setConfirmingId(null);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    router.refresh();
+  }
+
+  async function handleLeave(draftId: string) {
+    setLeavingId(draftId);
+    setError(null);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("leave_draft", { p_draft_id: draftId });
+    setLeavingId(null);
+    setConfirmingLeaveId(null);
     if (error) {
       setError(error.message);
       return;
@@ -70,6 +86,38 @@ export function DraftList({ rows }: { rows: DraftListRow[] }) {
               <span className="rounded-full bg-black/5 px-2 py-1 text-xs font-bold uppercase dark:bg-white/10">
                 {role}
               </span>
+
+              {role === "drafter" &&
+                (confirmingLeaveId === draft.id ? (
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-black/60 dark:text-white/60">
+                      Leave this draft?
+                    </span>
+                    <button
+                      type="button"
+                      disabled={leavingId === draft.id}
+                      onClick={() => handleLeave(draft.id)}
+                      className="rounded-md bg-red-500 px-2 py-1 text-xs font-bold text-white disabled:opacity-50"
+                    >
+                      {leavingId === draft.id ? "Leaving…" : "Confirm"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingLeaveId(null)}
+                      className="rounded-md bg-black/5 px-2 py-1 text-xs font-bold dark:bg-white/10"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingLeaveId(draft.id)}
+                    className="rounded-md bg-black/5 px-2 py-1 text-xs font-bold text-red-600 hover:bg-red-500/10 dark:bg-white/10 dark:text-red-400"
+                  >
+                    Leave
+                  </button>
+                ))}
 
               {role === "commissioner" &&
                 (confirmingId === draft.id ? (

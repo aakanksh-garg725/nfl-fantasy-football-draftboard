@@ -6,6 +6,7 @@ import { useServerClockOffset } from "@/lib/hooks/useServerClockOffset";
 import { deriveRemainingSeconds } from "@/lib/draft/timer";
 import { mapDraftRow, mapPickRow, mapTimerRow } from "@/lib/draft/mappers";
 import { useWhammy } from "@/lib/hooks/useWhammy";
+import { useDraftSoundCues } from "@/lib/hooks/useDraftSoundCues";
 import { TimerHeaderBar } from "./TimerHeaderBar";
 import { DraftBoardGrid } from "./DraftBoardGrid";
 import { WhammyOverlay } from "./WhammyOverlay";
@@ -98,6 +99,14 @@ export function SpectateView({
     draftId: draft.id,
     currentOverallPick: draft.currentOverallPick,
     teams,
+  });
+
+  // …and the opening chime and final-countdown beeps, so the room's display
+  // sounds them in step with every drafter's screen.
+  useDraftSoundCues({
+    timerStatus: timer.status,
+    displaySeconds,
+    currentOverallPick: draft.currentOverallPick,
   });
 
   const picks = Array.from(picksById.values());

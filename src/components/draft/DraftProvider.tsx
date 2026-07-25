@@ -14,6 +14,7 @@ import { useServerClockOffset } from "@/lib/hooks/useServerClockOffset";
 import { useWhammy, WHAMMY_VISIBLE_MS } from "@/lib/hooks/useWhammy";
 import { WhammyOverlay } from "./WhammyOverlay";
 import { deriveRemainingSeconds } from "@/lib/draft/timer";
+import { useDraftSoundCues } from "@/lib/hooks/useDraftSoundCues";
 import {
   mapDraftRow,
   mapPickRow,
@@ -189,6 +190,14 @@ export function DraftProvider({
       })();
     }
   }, [displaySeconds, timer, supabase, initial.draft.id]);
+
+  // Room-wide audio cues (opening chime + final-countdown beeps), on every
+  // profile that opens the draft rather than only the team on the clock.
+  useDraftSoundCues({
+    timerStatus: timer.status,
+    displaySeconds,
+    currentOverallPick: draft.currentOverallPick,
+  });
 
   const clearError = useCallback(() => setLastError(null), []);
 

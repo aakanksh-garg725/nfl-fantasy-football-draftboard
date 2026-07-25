@@ -1,13 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import clsx from "clsx";
 import { useDraft } from "./DraftProvider";
 import { findUpcomingTurn, TURN_WARNING_LEAD } from "@/lib/draft/turn";
-import {
-  playOnTheClockSound,
-  primeOnTheClockSound,
-} from "@/lib/draft/onTheClockSound";
 
 /**
  * Copy and colour for each step of the countdown, keyed by how many picks out
@@ -60,26 +55,10 @@ export function TurnBanner() {
   const turn = myTeamId
     ? findUpcomingTurn(picks, myTeamId, draft.currentOverallPick)
     : null;
-  const onTheClock = turn?.picksAway === 0;
 
-  // Fires on the edge into the pick, not on every render while it lasts. The
-  // ref starts false so landing on the page mid-turn still announces — a
-  // refresh shouldn't cost you the alert. Nested navigation (board ↔ players)
-  // keeps this layout mounted, so moving between screens doesn't re-trigger it.
-  // Buffer the clip while the draft is still someone else's problem. Only for
-  // people who'll actually hear it — a commissioner or spectator shouldn't
-  // download an alert that will never play for them.
-  const hasTeam = Boolean(myTeamId);
-  useEffect(() => {
-    if (hasTeam) primeOnTheClockSound();
-  }, [hasTeam]);
-
-  const soundedRef = useRef(false);
-  useEffect(() => {
-    if (onTheClock && !soundedRef.current) void playOnTheClockSound();
-    soundedRef.current = onTheClock;
-  }, [onTheClock]);
-
+  // This bar is only the visual countdown now. The draft's audio cues — the
+  // opening chime and the final-ten-seconds beeps — play for every profile in
+  // the room, team or not, so they live in DraftProvider rather than here.
   if (!turn || turn.picksAway > TURN_WARNING_LEAD) return null;
 
   const stage = STAGES[turn.picksAway];
