@@ -5,6 +5,9 @@ export const POSITIONS: Position[] = ["QB", "RB", "WR", "TE", "K", "DST"];
 export const TEAM_COUNT_OPTIONS = [8, 10, 12, 14, 16] as const;
 export type TeamCountOption = (typeof TEAM_COUNT_OPTIONS)[number];
 
+export const ROUND_COUNT_MIN = 15;
+export const ROUND_COUNT_MAX = 20;
+
 export const TIMER_DURATION_OPTIONS = [120, 90, 60] as const;
 export type TimerDurationOption = (typeof TIMER_DURATION_OPTIONS)[number];
 
@@ -15,31 +18,6 @@ export const SCORING_FORMAT_OPTIONS: { value: ScoringFormat; label: string }[] =
   { value: "half_ppr", label: "Half-PPR" },
   { value: "non_ppr", label: "Non-PPR" },
 ];
-
-/**
- * Roster construction: starting slots per position plus bench. Purely
- * informational/derived — nothing enforces these limits during the draft,
- * a drafter can fill any pick with any position.
- */
-export const ROSTER_SLOTS = [
-  { key: "qb", label: "QB", max: 4, default: 1 },
-  { key: "rb", label: "RB", max: 6, default: 2 },
-  { key: "wr", label: "WR", max: 6, default: 2 },
-  { key: "te", label: "TE", max: 4, default: 1 },
-  { key: "flexRbWr", label: "FLEX (WR/RB)", max: 4, default: 1 },
-  { key: "flexWrRbTe", label: "FLEX (WR/RB/TE)", max: 4, default: 1 },
-  { key: "superflex", label: "Superflex (QB/WR/RB/TE)", max: 4, default: 0 },
-  { key: "k", label: "K", max: 2, default: 1 },
-  { key: "dst", label: "DST", max: 2, default: 1 },
-  { key: "bench", label: "Bench", min: 4, max: 8, default: 6 },
-] as const;
-
-export type RosterSlotKey = (typeof ROSTER_SLOTS)[number]["key"];
-export type RosterCounts = Record<RosterSlotKey, number>;
-
-export const DEFAULT_ROSTER_COUNTS: RosterCounts = Object.fromEntries(
-  ROSTER_SLOTS.map((slot) => [slot.key, slot.default])
-) as RosterCounts;
 
 export interface Player {
   id: string;
@@ -68,7 +46,6 @@ export interface DraftSettings {
   currentOverallPick: number;
   spectatorEnabled: boolean;
   scoringFormat: ScoringFormat;
-  rosterCounts: RosterCounts;
 }
 
 export interface DraftTeam {

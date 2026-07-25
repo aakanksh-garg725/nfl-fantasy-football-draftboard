@@ -48,3 +48,7 @@ next-env.d.ts
 
 # png
 .png
+
+# supabase CLI local state (per-machine, not shared)
+supabase/.temp
+supabase/.branches
