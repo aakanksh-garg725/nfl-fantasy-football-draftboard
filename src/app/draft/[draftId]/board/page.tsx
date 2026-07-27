@@ -7,6 +7,7 @@ import { DraftBoardGrid } from "@/components/draft/DraftBoardGrid";
 import { AvailablePlayersPanel } from "@/components/draft/AvailablePlayersPanel";
 import { RecentPicksTicker } from "@/components/draft/RecentPicksTicker";
 import { TimerEditDialog } from "@/components/draft/TimerEditDialog";
+import { StartDraftOverlay } from "@/components/draft/StartDraftOverlay";
 import { Modal } from "@/components/ui/Modal";
 import type { Pick } from "@/lib/draft/types";
 
@@ -23,6 +24,7 @@ export default function BoardPage() {
     durationSeconds,
     lastError,
     clearError,
+    startDraft,
     makePick,
     commissionerEditPick,
     startTimer,
@@ -30,6 +32,8 @@ export default function BoardPage() {
     restartTimer,
     editTimer,
   } = useDraft();
+
+  const isLocked = draft.status === "setup";
 
   const [editingPick, setEditingPick] = useState<Pick | null>(null);
   const [showEditTimer, setShowEditTimer] = useState(false);
@@ -76,7 +80,7 @@ export default function BoardPage() {
   }, [picks, teams]);
 
   async function handleEmptyCellClick(pick: Pick) {
-    if (!isCommissioner) return;
+    if (!isCommissioner || isLocked) return;
     setEditingPick(pick);
   }
 
@@ -91,50 +95,56 @@ export default function BoardPage() {
 
   return (
     <>
-      <TimerHeaderBar
-        timerStatus={timerStatus}
-        displaySeconds={displaySeconds}
-        durationSeconds={durationSeconds}
-        round={currentPick?.round ?? draft.roundCount}
-        pickInRound={currentPick?.pickInRound ?? draft.teamCount}
-        onClockTeamName={onClockTeam?.teamName ?? "Draft complete"}
-        nextUpTeamNames={nextUpTeamNames}
-        previousPick={
-          previousPlayer && previousTeam
-            ? { player: previousPlayer, teamName: previousTeam.teamName }
-            : null
-        }
-        isCommissioner={isCommissioner}
-        onStart={startTimer}
-        onPause={pauseTimer}
-        onRestart={restartTimer}
-        onEdit={() => setShowEditTimer(true)}
-      />
-
-      {lastError && (
-        <div className="flex items-center justify-between bg-red-500/10 px-4 py-2 text-sm text-red-600 dark:text-red-400">
-          {lastError}
-          <button onClick={clearError} className="font-bold">
-            ✕
-          </button>
-        </div>
-      )}
-
-      <div className="min-h-0 flex-1 overflow-auto p-3">
-        <DraftBoardGrid
-          teams={teams}
-          roundCount={draft.roundCount}
-          picks={picks}
-          playersById={playersById}
-          byeWeeksByTeam={byeWeeksByTeam}
-          currentOverallPick={draft.currentOverallPick}
-          onEmptyCellClick={isCommissioner ? handleEmptyCellClick : undefined}
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <TimerHeaderBar
+          timerStatus={timerStatus}
+          displaySeconds={displaySeconds}
+          durationSeconds={durationSeconds}
+          round={currentPick?.round ?? draft.roundCount}
+          pickInRound={currentPick?.pickInRound ?? draft.teamCount}
+          onClockTeamName={onClockTeam?.teamName ?? "Draft complete"}
+          nextUpTeamNames={nextUpTeamNames}
+          previousPick={
+            previousPlayer && previousTeam
+              ? { player: previousPlayer, teamName: previousTeam.teamName }
+              : null
+          }
+          isCommissioner={isCommissioner && !isLocked}
+          onStart={startTimer}
+          onPause={pauseTimer}
+          onRestart={restartTimer}
+          onEdit={() => setShowEditTimer(true)}
         />
-      </div>
 
-      {/* Outside the scrolling board so it stays pinned to the bottom of the
-          screen, the way a broadcast ticker sits below the play. */}
-      <RecentPicksTicker />
+        {lastError && (
+          <div className="flex items-center justify-between bg-red-500/10 px-4 py-2 text-sm text-red-600 dark:text-red-400">
+            {lastError}
+            <button onClick={clearError} className="font-bold">
+              ✕
+            </button>
+          </div>
+        )}
+
+        <div className="min-h-0 flex-1 overflow-auto p-3">
+          <DraftBoardGrid
+            teams={teams}
+            roundCount={draft.roundCount}
+            picks={picks}
+            playersById={playersById}
+            byeWeeksByTeam={byeWeeksByTeam}
+            currentOverallPick={draft.currentOverallPick}
+            onEmptyCellClick={isCommissioner && !isLocked ? handleEmptyCellClick : undefined}
+          />
+        </div>
+
+        {/* Outside the scrolling board so it stays pinned to the bottom of the
+            screen, the way a broadcast ticker sits below the play. */}
+        <RecentPicksTicker />
+
+        {isLocked && (
+          <StartDraftOverlay isCommissioner={isCommissioner} onStart={startDraft} />
+        )}
+      </div>
 
       {editingPick && (
         <Modal

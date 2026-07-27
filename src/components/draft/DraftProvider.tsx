@@ -56,6 +56,7 @@ interface DraftContextValue {
   durationSeconds: number;
   lastError: string | null;
   clearError: () => void;
+  startDraft: () => Promise<void>;
   makePick: (playerId: string) => Promise<boolean>;
   commissionerEditPick: (pickId: string, playerId: string | null) => Promise<boolean>;
   startTimer: () => Promise<void>;
@@ -223,6 +224,11 @@ export function DraftProvider({
 
   const clearError = useCallback(() => setLastError(null), []);
 
+  const startDraft = useCallback(async () => {
+    const { error } = await supabase.rpc("start_draft", { p_draft_id: initial.draft.id });
+    if (error) setLastError(error.message);
+  }, [supabase, initial.draft.id]);
+
   const makePick = useCallback(
     async (playerId: string) => {
       const { error } = await supabase.rpc("make_pick", {
@@ -321,6 +327,7 @@ export function DraftProvider({
     durationSeconds: timer.durationSeconds,
     lastError,
     clearError,
+    startDraft,
     makePick,
     commissionerEditPick,
     startTimer,

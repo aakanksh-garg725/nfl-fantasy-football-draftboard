@@ -71,8 +71,9 @@ export default function PlayersPage() {
     return map;
   }, [picks, teams]);
 
+  const isLocked = draft.status === "setup";
   const canDraft = Boolean(
-    currentPick && (isCommissioner || currentPick.teamId === myTeamId)
+    !isLocked && currentPick && (isCommissioner || currentPick.teamId === myTeamId)
   );
 
   return (
@@ -90,7 +91,7 @@ export default function PlayersPage() {
             ? { player: previousPlayer, teamName: previousTeam.teamName }
             : null
         }
-        isCommissioner={isCommissioner}
+        isCommissioner={isCommissioner && !isLocked}
         onStart={startTimer}
         onPause={pauseTimer}
         onRestart={restartTimer}
@@ -106,11 +107,18 @@ export default function PlayersPage() {
         </div>
       )}
 
-      {!canDraft && currentPick && (
+      {isLocked ? (
         <div className="bg-amber-500/10 px-4 py-2 text-center text-sm text-amber-600 dark:text-amber-400">
-          Waiting for {onClockTeam?.teamName} to pick — you can search now, but the draft
-          button unlocks on your turn.
+          The draft hasn&apos;t started yet — head to the Board tab to press Start Draft.
         </div>
+      ) : (
+        !canDraft &&
+        currentPick && (
+          <div className="bg-amber-500/10 px-4 py-2 text-center text-sm text-amber-600 dark:text-amber-400">
+            Waiting for {onClockTeam?.teamName} to pick — you can search now, but the draft
+            button unlocks on your turn.
+          </div>
+        )
       )}
 
       <div className="flex min-h-0 flex-1 flex-col p-3">

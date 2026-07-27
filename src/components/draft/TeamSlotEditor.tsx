@@ -23,11 +23,12 @@ interface InviteRow {
 export function TeamSlotEditor({
   draftId,
   teams,
-  canReorder = true,
+  canEditTeams = true,
 }: {
   draftId: string;
   teams: DraftTeam[];
-  canReorder?: boolean;
+  /** Team names and draft order both freeze once the draft leaves 'setup'. */
+  canEditTeams?: boolean;
 }) {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -158,7 +159,7 @@ export function TeamSlotEditor({
   }
 
   function startDrag(e: React.PointerEvent, teamId: string) {
-    if (!canReorder || e.button !== 0) return;
+    if (!canEditTeams || e.button !== 0) return;
     e.preventDefault();
     const row = rowRefs.current[teamId];
     if (!row) return;
@@ -228,9 +229,9 @@ export function TeamSlotEditor({
 
   return (
     <div className="relative flex flex-col gap-2">
-      {!canReorder && (
+      {!canEditTeams && (
         <p className="text-xs text-black/40 dark:text-white/40">
-          Draft order is locked once the draft has started.
+          Team names and draft order are locked once the draft has started.
         </p>
       )}
       {reorderError && <p className="text-xs text-red-500">{reorderError}</p>}
@@ -251,9 +252,9 @@ export function TeamSlotEditor({
             <span
               onPointerDown={(e) => startDrag(e, team.id)}
               className={`select-none px-1 text-black/30 dark:text-white/30 ${
-                canReorder ? "cursor-grab active:cursor-grabbing touch-none" : "cursor-not-allowed opacity-40"
+                canEditTeams ? "cursor-grab active:cursor-grabbing touch-none" : "cursor-not-allowed opacity-40"
               }`}
-              title={canReorder ? "Drag to reorder" : undefined}
+              title={canEditTeams ? "Drag to reorder" : undefined}
               aria-hidden
             >
               ⠿
@@ -262,13 +263,14 @@ export function TeamSlotEditor({
             <input
               type="text"
               value={drafts[team.id] ?? team.teamName}
+              disabled={!canEditTeams}
               onChange={(e) => {
                 const value = e.target.value;
                 setDrafts((prev) => ({ ...prev, [team.id]: value }));
                 scheduleSave(team.id, value, team.teamName);
               }}
               onBlur={(e) => flushSave(team.id, e.target.value, team.teamName)}
-              className="min-w-0 flex-1 rounded-md border border-black/10 bg-transparent px-3 py-1.5 text-sm dark:border-white/10"
+              className="min-w-0 flex-1 rounded-md border border-black/10 bg-transparent px-3 py-1.5 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10"
             />
             {savingId === team.id && (
               <span className="shrink-0 text-xs text-black/40 dark:text-white/40">Saving…</span>

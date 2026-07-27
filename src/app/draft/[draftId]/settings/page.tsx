@@ -36,7 +36,7 @@ export default function SettingsPage() {
         <TeamSlotEditor
           draftId={draft.id}
           teams={teams}
-          canReorder={draft.status === "setup"}
+          canEditTeams={draft.status === "setup"}
         />
       </section>
 
