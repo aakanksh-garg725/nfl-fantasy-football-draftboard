@@ -42,28 +42,6 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
-/* Whammy popup (components/draft/WhammyOverlay.tsx): a quick pop-in, and a
-   bar that drains over the five seconds the dare stays on screen. */
-@keyframes whammy-pop-in {
-  from {
-    opacity: 0;
-    transform: scale(0.85) translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes whammy-drain {
-  from {
-    transform: scaleX(1);
-  }
-  to {
-    transform: scaleX(0);
-  }
-}
-
 /* Recent-picks ticker (components/draft/RecentPicksTicker.tsx). Two identical
    laps sit side by side inside the track; sliding the pair from 0 to -50% walks
    the second lap's start position onto the first's, so the hand-off lands on a
@@ -94,15 +72,6 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  @keyframes whammy-pop-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
   /* Drop the motion, and with it the duplicate lap that only existed to serve
      the loop — then hand the strip back to the user as a normal scroller. */
   .ticker-track {

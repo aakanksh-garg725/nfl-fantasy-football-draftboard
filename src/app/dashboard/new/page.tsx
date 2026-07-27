@@ -4,26 +4,23 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
-  ROUND_COUNT_MAX,
-  ROUND_COUNT_MIN,
+  ROSTER_DEFAULTS,
+  ROSTER_FIELDS,
   TEAM_COUNT_OPTIONS,
   TIMER_DURATION_OPTIONS,
+  totalRosterRounds,
+  type RosterCounts,
   type TeamCountOption,
   type TimerDurationOption,
 } from "@/lib/draft/types";
 import { formatSeconds } from "@/lib/draft/timer";
-
-const ROUND_COUNT_OPTIONS = Array.from(
-  { length: ROUND_COUNT_MAX - ROUND_COUNT_MIN + 1 },
-  (_, i) => ROUND_COUNT_MIN + i
-);
 
 export default function NewDraftPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [season, setSeason] = useState(2026);
   const [teamCount, setTeamCount] = useState<TeamCountOption>(10);
-  const [roundCount, setRoundCount] = useState(15);
+  const [roster, setRoster] = useState<RosterCounts>(ROSTER_DEFAULTS);
   const [timerSeconds, setTimerSeconds] = useState<TimerDurationOption>(90);
   const [teamNames, setTeamNames] = useState<string[]>(
     Array.from({ length: 10 }, () => "")
@@ -34,6 +31,12 @@ export default function NewDraftPage() {
   const teamNameSlots = useMemo(() => {
     return Array.from({ length: teamCount }, (_, i) => teamNames[i] ?? "");
   }, [teamNames, teamCount]);
+
+  const roundCount = useMemo(() => totalRosterRounds(roster), [roster]);
+
+  function setRosterField(key: keyof RosterCounts, value: number) {
+    setRoster((prev) => ({ ...prev, [key]: value }));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,8 +55,17 @@ export default function NewDraftPage() {
       p_name: name,
       p_season: season,
       p_team_count: teamCount,
-      p_round_count: roundCount,
       p_scoring_format: "ppr",
+      p_roster_qb: roster.qb,
+      p_roster_rb: roster.rb,
+      p_roster_wr: roster.wr,
+      p_roster_te: roster.te,
+      p_roster_flex_rb_wr: roster.flexRbWr,
+      p_roster_flex_wr_rb_te: roster.flexWrRbTe,
+      p_roster_superflex: roster.superflex,
+      p_roster_k: roster.k,
+      p_roster_dst: roster.dst,
+      p_roster_bench: roster.bench,
       p_pick_timer_seconds_default: timerSeconds,
       p_team_names: trimmedNames,
     });
@@ -114,25 +126,33 @@ export default function NewDraftPage() {
           </div>
         </div>
 
-        <div className="text-sm">
-          Number of rounds
-          <div className="mt-1 flex flex-wrap gap-2">
-            {ROUND_COUNT_OPTIONS.map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setRoundCount(n)}
-                className={`flex-1 rounded-md border py-2 font-bold ${
-                  roundCount === n
-                    ? "border-emerald-500 bg-emerald-500 text-white"
-                    : "border-black/10 dark:border-white/10"
-                }`}
-              >
-                {n}
-              </button>
+        <fieldset className="text-sm">
+          <legend className="mb-1">Roster construction</legend>
+          <div className="grid grid-cols-2 gap-3">
+            {ROSTER_FIELDS.map(({ key, label, min, max }) => (
+              <label key={key} className="flex flex-col gap-1">
+                {label}
+                <input
+                  type="number"
+                  required
+                  min={min}
+                  max={max}
+                  value={roster[key]}
+                  onChange={(e) => {
+                    const raw = Math.max(min, Number(e.target.value) || 0);
+                    const clamped = max === undefined ? raw : Math.min(max, raw);
+                    setRosterField(key, clamped);
+                  }}
+                  className="rounded-md border border-black/10 bg-transparent px-3 py-2 dark:border-white/10"
+                />
+              </label>
             ))}
           </div>
-        </div>
+
+          <p className="mt-3 text-black/60 dark:text-white/60">
+            Total rounds: <span className="font-bold">{roundCount}</span>
+          </p>
+        </fieldset>
 
         <div className="text-sm">
           Pick timer

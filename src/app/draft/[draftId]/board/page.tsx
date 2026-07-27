@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useDraft } from "@/components/draft/DraftProvider";
 import { TimerHeaderBar } from "@/components/draft/TimerHeaderBar";
+import { DraftSearchBar } from "@/components/draft/DraftSearchBar";
 import { DraftBoardGrid } from "@/components/draft/DraftBoardGrid";
 import { AvailablePlayersPanel } from "@/components/draft/AvailablePlayersPanel";
 import { RecentPicksTicker } from "@/components/draft/RecentPicksTicker";
@@ -19,6 +20,7 @@ export default function BoardPage() {
     playersById,
     byeWeeksByTeam,
     isCommissioner,
+    myTeamId,
     timerStatus,
     displaySeconds,
     durationSeconds,
@@ -49,6 +51,9 @@ export default function BoardPage() {
   const onClockTeam = currentPick
     ? teams.find((t) => t.id === currentPick.teamId)
     : undefined;
+  const canDraftFromSearch = Boolean(
+    !isLocked && currentPick && (isCommissioner || currentPick.teamId === myTeamId)
+  );
 
   const previousMadePick = [...sortedPicks]
     .reverse()
@@ -84,6 +89,10 @@ export default function BoardPage() {
     setEditingPick(pick);
   }
 
+  async function handleDraftFromSearch(playerId: string) {
+    await makePick(playerId);
+  }
+
   async function handleSelectPlayerForEditingPick(playerId: string) {
     if (!editingPick) return;
     const isCurrent = editingPick.overallPickNumber === draft.currentOverallPick;
@@ -114,6 +123,15 @@ export default function BoardPage() {
           onPause={pauseTimer}
           onRestart={restartTimer}
           onEdit={() => setShowEditTimer(true)}
+          searchBar={
+            <DraftSearchBar
+              players={allPlayers}
+              draftedByPlayerId={draftedByPlayerId}
+              byeWeeksByTeam={byeWeeksByTeam}
+              canDraft={canDraftFromSearch}
+              onDraftPlayer={handleDraftFromSearch}
+            />
+          }
         />
 
         {lastError && (
@@ -169,8 +187,8 @@ export default function BoardPage() {
         <TimerEditDialog
           currentDurationSeconds={durationSeconds}
           onClose={() => setShowEditTimer(false)}
-          onConfirm={(seconds, applyTo) => {
-            editTimer(seconds, applyTo);
+          onConfirm={(seconds) => {
+            editTimer(seconds);
             setShowEditTimer(false);
           }}
         />

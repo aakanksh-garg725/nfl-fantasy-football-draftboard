@@ -21,10 +21,8 @@ export function deriveRemainingSeconds(
   }
   const serverNowMs = nowMs - clockOffsetMs;
   const startedAtMs = new Date(timer.startedAt).getTime();
-  // Floored at zero because a whammy hold (hold_timer_for_whammy, migration
-  // 0008) parks started_at in the future: until it passes, elapsed is negative
-  // and the countdown should sit frozen at the full duration rather than
-  // reading above it.
+  // Floored at zero: guards against a negative elapsed time reading above the
+  // full duration if started_at is ever ahead of the client's clock.
   const elapsedSeconds = Math.max(
     0,
     Math.floor((serverNowMs - startedAtMs) / 1000)

@@ -11,7 +11,8 @@ export function TimerEditDialog({
   onClose,
 }: {
   currentDurationSeconds: number;
-  onConfirm: (seconds: number, applyTo: "current" | "default") => void;
+  /** Always applies to this pick and the default for every pick after — there's no "just this pick" option. */
+  onConfirm: (seconds: number) => void;
   onClose: () => void;
 }) {
   const [seconds, setSeconds] = useState<TimerDurationOption>(
@@ -19,7 +20,6 @@ export function TimerEditDialog({
       ? (currentDurationSeconds as TimerDurationOption)
       : 90
   );
-  const [applyTo, setApplyTo] = useState<"current" | "default">("current");
 
   return (
     <Modal title="Edit pick timer" onClose={onClose}>
@@ -44,29 +44,13 @@ export function TimerEditDialog({
           </div>
         </div>
 
-        <div>
-          <div className="mb-1 text-sm font-semibold">Apply to</div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              checked={applyTo === "current"}
-              onChange={() => setApplyTo("current")}
-            />
-            Just this pick
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              checked={applyTo === "default"}
-              onChange={() => setApplyTo("default")}
-            />
-            This pick and the default for every pick after
-          </label>
-        </div>
+        <p className="text-xs text-black/50 dark:text-white/50">
+          Applies to this pick and every pick for the rest of the draft.
+        </p>
 
         <button
           type="button"
-          onClick={() => onConfirm(seconds, applyTo)}
+          onClick={() => onConfirm(seconds)}
           className="rounded-md bg-emerald-500 py-2 font-bold text-white"
         >
           Save

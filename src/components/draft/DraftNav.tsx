@@ -22,6 +22,7 @@ export function DraftNav({
 
   const tabs = [
     { href: `/draft/${draftId}/board`, label: "Draft Board" },
+    { href: `/draft/${draftId}/roster`, label: "Roster" },
     { href: `/draft/${draftId}/players`, label: "Available Players" },
     ...(isCommissioner
       ? [{ href: `/draft/${draftId}/settings`, label: "Settings" }]

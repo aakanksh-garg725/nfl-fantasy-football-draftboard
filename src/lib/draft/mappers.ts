@@ -23,6 +23,16 @@ export function mapDraftRow(row: {
   status: string;
   team_count: number;
   round_count: number;
+  roster_qb: number;
+  roster_rb: number;
+  roster_wr: number;
+  roster_te: number;
+  roster_flex_rb_wr: number;
+  roster_flex_wr_rb_te: number;
+  roster_superflex: number;
+  roster_k: number;
+  roster_dst: number;
+  roster_bench: number;
   pick_timer_seconds_default: number;
   current_overall_pick: number;
   spectator_enabled: boolean;
@@ -36,6 +46,18 @@ export function mapDraftRow(row: {
     status: row.status as DraftSettings["status"],
     teamCount: row.team_count as DraftSettings["teamCount"],
     roundCount: row.round_count,
+    roster: {
+      qb: row.roster_qb,
+      rb: row.roster_rb,
+      wr: row.roster_wr,
+      te: row.roster_te,
+      flexRbWr: row.roster_flex_rb_wr,
+      flexWrRbTe: row.roster_flex_wr_rb_te,
+      superflex: row.roster_superflex,
+      k: row.roster_k,
+      dst: row.roster_dst,
+      bench: row.roster_bench,
+    },
     pickTimerSecondsDefault:
       row.pick_timer_seconds_default as DraftSettings["pickTimerSecondsDefault"],
     currentOverallPick: row.current_overall_pick,

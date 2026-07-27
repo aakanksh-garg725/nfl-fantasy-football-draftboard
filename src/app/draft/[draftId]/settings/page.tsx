@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useDraft } from "@/components/draft/DraftProvider";
 import { TeamSlotEditor } from "@/components/draft/TeamSlotEditor";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SettingsPage() {
   const { draft, teams, isCommissioner } = useDraft();
+  const [copied, setCopied] = useState(false);
 
   if (!isCommissioner) {
     return <p className="p-4 text-sm">Only the commissioner can view settings.</p>;
@@ -20,6 +22,13 @@ export default function SettingsPage() {
   }
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const spectateUrl = `${origin}/spectate/${draft.id}`;
+
+  async function handleCopyLink() {
+    await navigator.clipboard.writeText(spectateUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
 
   return (
     // The draft layout is a fixed-height flex column with overflow hidden, so
@@ -52,9 +61,18 @@ export default function SettingsPage() {
           Allow anyone with the link to view this draft (read-only, no account needed)
         </label>
         {draft.spectatorEnabled && (
-          <code className="mt-2 block truncate rounded bg-black/5 px-2 py-1 text-xs dark:bg-white/10">
-            {origin}/spectate/{draft.id}
-          </code>
+          <div className="mt-2 flex items-center gap-2">
+            <code className="block flex-1 truncate rounded bg-black/5 px-2 py-1 text-xs dark:bg-white/10">
+              {spectateUrl}
+            </code>
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className="shrink-0 rounded-md bg-black/5 px-2 py-1 text-xs font-bold hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20"
+            >
+              {copied ? "Copied!" : "Copy link"}
+            </button>
+          </div>
         )}
       </section>
       </div>

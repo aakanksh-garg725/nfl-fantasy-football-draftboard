@@ -26,6 +26,8 @@ export interface TimerHeaderBarProps {
   onPause?: () => void;
   onRestart?: () => void;
   onEdit?: () => void;
+  /** Rendered between the "on the clock" block and the previous-pick panel — the Draft Board's search-to-draft box. */
+  searchBar?: React.ReactNode;
 }
 
 /**
@@ -79,6 +81,7 @@ export function TimerHeaderBar({
   onPause,
   onRestart,
   onEdit,
+  searchBar,
 }: TimerHeaderBarProps) {
   const filledFraction = durationSeconds > 0 ? displaySeconds / durationSeconds : 0;
   const tone = toneForRemaining(filledFraction);
@@ -167,6 +170,8 @@ export function TimerHeaderBar({
           </div>
         )}
       </div>
+
+      {searchBar}
 
       {previousPick && <PreviousPickPanel previousPick={previousPick} />}
     </div>

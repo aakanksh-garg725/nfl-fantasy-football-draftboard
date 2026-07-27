@@ -1,14 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useDraft } from "@/components/draft/DraftProvider";
 import { TimerHeaderBar } from "@/components/draft/TimerHeaderBar";
-import { AvailablePlayersPanel } from "@/components/draft/AvailablePlayersPanel";
+import { RosterBoardGrid } from "@/components/draft/RosterBoardGrid";
 import { TimerEditDialog } from "@/components/draft/TimerEditDialog";
 
-export default function PlayersPage() {
-  const router = useRouter();
+export default function RosterPage() {
   const {
     draft,
     teams,
@@ -16,19 +14,18 @@ export default function PlayersPage() {
     playersById,
     byeWeeksByTeam,
     isCommissioner,
-    myTeamId,
     timerStatus,
     displaySeconds,
     durationSeconds,
     lastError,
     clearError,
-    makePick,
     startTimer,
     pauseTimer,
     restartTimer,
     editTimer,
   } = useDraft();
 
+  const isLocked = draft.status === "setup";
   const [showEditTimer, setShowEditTimer] = useState(false);
 
   const sortedPicks = useMemo(
@@ -55,26 +52,6 @@ export default function PlayersPage() {
     .filter((p) => p.overallPickNumber > draft.currentOverallPick)
     .slice(0, 3)
     .map((p) => teams.find((t) => t.id === p.teamId)?.teamName ?? "");
-
-  const allPlayers = useMemo(
-    () => Array.from(playersById.values()),
-    [playersById]
-  );
-  const draftedByPlayerId = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const p of picks) {
-      if (p.status === "made" && p.playerId) {
-        const team = teams.find((t) => t.id === p.teamId);
-        if (team) map.set(p.playerId, team.teamName);
-      }
-    }
-    return map;
-  }, [picks, teams]);
-
-  const isLocked = draft.status === "setup";
-  const canDraft = Boolean(
-    !isLocked && currentPick && (isCommissioner || currentPick.teamId === myTeamId)
-  );
 
   return (
     <>
@@ -107,30 +84,13 @@ export default function PlayersPage() {
         </div>
       )}
 
-      {isLocked ? (
-        <div className="bg-amber-500/10 px-4 py-2 text-center text-sm text-amber-600 dark:text-amber-400">
-          The draft hasn&apos;t started yet — head to the Board tab to press Start Draft.
-        </div>
-      ) : (
-        !canDraft &&
-        currentPick && (
-          <div className="bg-amber-500/10 px-4 py-2 text-center text-sm text-amber-600 dark:text-amber-400">
-            Waiting for {onClockTeam?.teamName} to pick — you can search now, but the draft
-            button unlocks on your turn.
-          </div>
-        )
-      )}
-
-      <div className="flex min-h-0 flex-1 flex-col p-3">
-        <AvailablePlayersPanel
-          players={allPlayers}
+      <div className="min-h-0 flex-1 overflow-auto p-3">
+        <RosterBoardGrid
+          teams={teams}
+          roster={draft.roster}
+          picks={picks}
+          playersById={playersById}
           byeWeeksByTeam={byeWeeksByTeam}
-          draftedByPlayerId={draftedByPlayerId}
-          canDraft={canDraft}
-          onDraftPlayer={async (playerId) => {
-            const ok = await makePick(playerId);
-            if (ok) router.push(`/draft/${draft.id}/board`);
-          }}
         />
       </div>
 
