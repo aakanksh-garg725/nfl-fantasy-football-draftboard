@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { DraftList, type DraftListRow } from "@/components/DraftList";
+import { PendingInvites, type PendingInviteRow } from "@/components/PendingInvites";
 
 interface MembershipRow {
   role: "commissioner" | "drafter";
@@ -20,17 +21,28 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data, error } = await supabase
-    .from("draft_members")
-    .select("role, drafts(id, name, season, status, team_count, round_count)")
-    .eq("user_id", user?.id ?? "")
-    .returns<MembershipRow[]>();
+  const [{ data, error }, { data: inviteData }] = await Promise.all([
+    supabase
+      .from("draft_members")
+      .select("role, drafts(id, name, season, status, team_count, round_count)")
+      .eq("user_id", user?.id ?? "")
+      .returns<MembershipRow[]>(),
+    supabase.rpc("list_my_pending_invites") as unknown as Promise<{
+      data: { id: string; draft_name: string; team_name: string }[] | null;
+    }>,
+  ]);
 
   const rows: DraftListRow[] = (data ?? [])
     .filter((row): row is MembershipRow & { drafts: NonNullable<MembershipRow["drafts"]> } =>
       row.drafts != null
     )
     .map((row) => ({ role: row.role, draft: row.drafts }));
+
+  const inviteRows: PendingInviteRow[] = (inviteData ?? []).map((row) => ({
+    id: row.id,
+    draftName: row.draft_name,
+    teamName: row.team_name,
+  }));
 
   return (
     <div>
@@ -43,6 +55,8 @@ export default async function DashboardPage() {
           Create Draft
         </Link>
       </div>
+
+      <PendingInvites rows={inviteRows} />
 
       {error && <p className="text-sm text-red-500">{error.message}</p>}
 

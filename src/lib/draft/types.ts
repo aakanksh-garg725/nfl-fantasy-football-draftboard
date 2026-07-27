@@ -91,3 +91,14 @@ export interface DraftMember {
   role: DraftMemberRole;
   teamId: string | null;
 }
+
+export type InviteStatus = "pending" | "accepted" | "revoked" | "declined";
+
+export interface DraftInvite {
+  id: string;
+  draftId: string;
+  teamId: string;
+  email: string | null;
+  invitedUserId: string | null;
+  status: InviteStatus;
+}

@@ -1,8 +1,10 @@
 import type {
+  DraftInvite,
   DraftMemberRole,
   DraftSettings,
   DraftTeam,
   DraftTimerState,
+  InviteStatus,
   Pick,
   PickStatus,
   Player,
@@ -133,4 +135,22 @@ export function mapByeWeekRow(row: {
 export interface DraftMemberRow {
   role: DraftMemberRole;
   team_id: string | null;
+}
+
+export function mapInviteRow(row: {
+  id: string;
+  draft_id: string;
+  team_id: string;
+  email: string | null;
+  invited_user_id: string | null;
+  status: string;
+}): DraftInvite {
+  return {
+    id: row.id,
+    draftId: row.draft_id,
+    teamId: row.team_id,
+    email: row.email,
+    invitedUserId: row.invited_user_id,
+    status: row.status as InviteStatus,
+  };
 }

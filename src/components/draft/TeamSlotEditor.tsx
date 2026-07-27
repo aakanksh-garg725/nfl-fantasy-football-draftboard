@@ -16,8 +16,8 @@ interface DragRect {
 interface InviteRow {
   id: string;
   team_id: string;
-  token: string;
-  status: "pending" | "accepted" | "revoked";
+  email: string | null;
+  status: "pending" | "accepted" | "revoked" | "declined";
 }
 
 export function TeamSlotEditor({
@@ -37,7 +37,8 @@ export function TeamSlotEditor({
   const [invites, setInvites] = useState<InviteRow[]>([]);
   const [ownerNames, setOwnerNames] = useState<Record<string, string>>({});
   const [inviteBusyId, setInviteBusyId] = useState<string | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [inviteEmails, setInviteEmails] = useState<Record<string, string>>({});
+  const [inviteErrors, setInviteErrors] = useState<Record<string, string>>({});
 
   const [dragId, setDragId] = useState<string | null>(null);
   // Only meaningful while dragging (dragId set) — the live drop-preview
@@ -64,7 +65,7 @@ export function TeamSlotEditor({
     const supabase = createClient();
     const { data: inviteRows } = await supabase
       .from("invites")
-      .select("id, team_id, token, status")
+      .select("id, team_id, email, status")
       .eq("draft_id", draftId);
     setInvites(inviteRows ?? []);
 
@@ -88,10 +89,22 @@ export function TeamSlotEditor({
   }, [refreshInvites]);
 
   async function handleCreateInvite(teamId: string) {
+    const email = (inviteEmails[teamId] ?? "").trim();
+    if (!email) return;
     setInviteBusyId(teamId);
+    setInviteErrors((prev) => ({ ...prev, [teamId]: "" }));
     const supabase = createClient();
-    await supabase.rpc("create_invite", { p_draft_id: draftId, p_team_id: teamId });
+    const { error } = await supabase.rpc("create_invite", {
+      p_draft_id: draftId,
+      p_team_id: teamId,
+      p_email: email,
+    });
     setInviteBusyId(null);
+    if (error) {
+      setInviteErrors((prev) => ({ ...prev, [teamId]: error.message }));
+      return;
+    }
+    setInviteEmails((prev) => ({ ...prev, [teamId]: "" }));
     refreshInvites();
   }
 
@@ -99,13 +112,6 @@ export function TeamSlotEditor({
     const supabase = createClient();
     await supabase.rpc("revoke_invite", { p_invite_id: inviteId });
     refreshInvites();
-  }
-
-  function handleCopyInvite(invite: InviteRow) {
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    navigator.clipboard.writeText(`${origin}/invite/${invite.token}`);
-    setCopiedId(invite.id);
-    setTimeout(() => setCopiedId((current) => (current === invite.id ? null : current)), 1500);
   }
 
   const teamsById = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
@@ -156,6 +162,16 @@ export function TeamSlotEditor({
           setPendingOrderIds(null);
         }
       });
+  }
+
+  function randomizeOrder() {
+    if (!canEditTeams) return;
+    const ids = teams.map((t) => t.id);
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    commitOrder(ids);
   }
 
   function startDrag(e: React.PointerEvent, teamId: string) {
@@ -229,6 +245,15 @@ export function TeamSlotEditor({
 
   return (
     <div className="relative flex flex-col gap-2">
+      {canEditTeams && (
+        <button
+          type="button"
+          onClick={randomizeOrder}
+          className="self-start rounded-md bg-black/5 px-3 py-1.5 text-xs font-bold text-black/70 transition hover:bg-black/10 dark:bg-white/10 dark:text-white/70 dark:hover:bg-white/20"
+        >
+          🎲 Randomize order
+        </button>
+      )}
       {!canEditTeams && (
         <p className="text-xs text-black/40 dark:text-white/40">
           Team names and draft order are locked once the draft has started.
@@ -276,37 +301,55 @@ export function TeamSlotEditor({
               <span className="shrink-0 text-xs text-black/40 dark:text-white/40">Saving…</span>
             )}
 
-            <div className="flex w-48 shrink-0 items-center justify-start gap-1 text-xs">
+            <div className="flex w-64 shrink-0 flex-col items-start justify-center gap-1 text-xs">
               {team.ownerUserId ? (
                 <span className="truncate font-bold text-emerald-600 dark:text-emerald-400">
                   Claimed by {ownerNames[team.ownerUserId] ?? "a virtual drafter"}
                 </span>
               ) : pendingInvite ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyInvite(pendingInvite)}
-                    className="rounded-md bg-black/5 px-2 py-1 font-bold dark:bg-white/10"
-                  >
-                    {copiedId === pendingInvite.id ? "Copied!" : "Copy invite"}
-                  </button>
+                <div className="flex items-center gap-1">
+                  <span className="truncate text-black/60 dark:text-white/60">
+                    Invited {pendingInvite.email}
+                  </span>
                   <button
                     type="button"
                     onClick={() => handleRevokeInvite(pendingInvite.id)}
-                    className="rounded-md bg-red-500/10 px-2 py-1 font-bold text-red-600 dark:text-red-400"
+                    className="shrink-0 rounded-md bg-red-500/10 px-2 py-1 font-bold text-red-600 dark:text-red-400"
                   >
                     Revoke
                   </button>
-                </>
+                </div>
               ) : (
-                <button
-                  type="button"
-                  disabled={inviteBusyId === team.id}
-                  onClick={() => handleCreateInvite(team.id)}
-                  className="rounded-md bg-emerald-500 px-2 py-1 font-bold text-white disabled:opacity-50"
-                >
-                  Invite
-                </button>
+                <>
+                  <div className="flex w-full items-center gap-1">
+                    <input
+                      type="email"
+                      placeholder="drafter@email.com"
+                      value={inviteEmails[team.id] ?? ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setInviteEmails((prev) => ({ ...prev, [team.id]: value }));
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleCreateInvite(team.id);
+                      }}
+                      className="min-w-0 flex-1 rounded-md border border-black/10 bg-transparent px-2 py-1 outline-none dark:border-white/10"
+                    />
+                    <button
+                      type="button"
+                      disabled={
+                        inviteBusyId === team.id || !(inviteEmails[team.id] ?? "").trim()
+                      }
+                      onClick={() => handleCreateInvite(team.id)}
+                      className="shrink-0 rounded-md bg-emerald-500 px-2 py-1 font-bold text-white disabled:opacity-50"
+                    >
+                      {inviteBusyId === team.id ? "Inviting…" : "Invite"}
+                    </button>
+                  </div>
+                  {inviteErrors[team.id] && (
+                    <span className="text-red-500">{inviteErrors[team.id]}</span>
+                  )}
+                </>
               )}
             </div>
           </div>

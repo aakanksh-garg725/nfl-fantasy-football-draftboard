@@ -57,7 +57,7 @@ export function DraftList({ rows }: { rows: DraftListRow[] }) {
     return (
       <p className="text-sm text-black/60 dark:text-white/60">
         You&apos;re not part of any drafts yet. Create one, or ask a
-        commissioner for an invite link.
+        commissioner to invite the email you signed up with.
       </p>
     );
   }

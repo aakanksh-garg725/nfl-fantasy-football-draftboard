@@ -30,8 +30,9 @@ export default function SettingsPage() {
       <section>
         <h2 className="mb-2 text-lg font-bold">Team names &amp; draft order</h2>
         <p className="mb-2 text-xs text-black/40 dark:text-white/40">
-          Drag the handle to reorder teams for the snake draft. Use Invite to
-          generate a virtual drafter link for a team.
+          Drag the handle to reorder teams for the snake draft. Enter the
+          email a virtual drafter signed up with to invite them to a team —
+          the invite will show up on their dashboard to accept or decline.
         </p>
         <TeamSlotEditor
           draftId={draft.id}
