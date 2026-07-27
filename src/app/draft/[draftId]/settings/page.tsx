@@ -1,15 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { useDraft } from "@/components/draft/DraftProvider";
 import { TeamSlotEditor } from "@/components/draft/TeamSlotEditor";
-import { InviteManager } from "@/components/draft/InviteManager";
 import { createClient } from "@/lib/supabase/client";
-import type { DraftTeam } from "@/lib/draft/types";
 
 export default function SettingsPage() {
-  const { draft, teams: initialTeams, isCommissioner } = useDraft();
-  const [teams, setTeams] = useState<DraftTeam[]>(initialTeams);
+  const { draft, teams, isCommissioner } = useDraft();
 
   if (!isCommissioner) {
     return <p className="p-4 text-sm">Only the commissioner can view settings.</p>;
@@ -32,20 +28,16 @@ export default function SettingsPage() {
     <div className="min-h-0 flex-1 overflow-y-auto">
       <div className="mx-auto flex max-w-2xl flex-col gap-8 p-4">
       <section>
-        <h2 className="mb-2 text-lg font-bold">Team names</h2>
+        <h2 className="mb-2 text-lg font-bold">Team names &amp; draft order</h2>
+        <p className="mb-2 text-xs text-black/40 dark:text-white/40">
+          Drag the handle to reorder teams for the snake draft. Use Invite to
+          generate a virtual drafter link for a team.
+        </p>
         <TeamSlotEditor
+          draftId={draft.id}
           teams={teams}
-          onRenamed={(teamId, newName) =>
-            setTeams((prev) =>
-              prev.map((t) => (t.id === teamId ? { ...t, teamName: newName } : t))
-            )
-          }
+          canReorder={draft.status === "setup"}
         />
-      </section>
-
-      <section>
-        <h2 className="mb-2 text-lg font-bold">Invite virtual drafters</h2>
-        <InviteManager draftId={draft.id} teams={teams} />
       </section>
 
       <section>

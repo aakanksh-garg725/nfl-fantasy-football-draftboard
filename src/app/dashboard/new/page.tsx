@@ -6,10 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import {
   ROUND_COUNT_MAX,
   ROUND_COUNT_MIN,
-  SCORING_FORMAT_OPTIONS,
   TEAM_COUNT_OPTIONS,
   TIMER_DURATION_OPTIONS,
-  type ScoringFormat,
   type TeamCountOption,
   type TimerDurationOption,
 } from "@/lib/draft/types";
@@ -26,7 +24,6 @@ export default function NewDraftPage() {
   const [season, setSeason] = useState(2026);
   const [teamCount, setTeamCount] = useState<TeamCountOption>(10);
   const [roundCount, setRoundCount] = useState(15);
-  const [scoringFormat, setScoringFormat] = useState<ScoringFormat>("ppr");
   const [timerSeconds, setTimerSeconds] = useState<TimerDurationOption>(90);
   const [teamNames, setTeamNames] = useState<string[]>(
     Array.from({ length: 10 }, () => "")
@@ -35,15 +32,20 @@ export default function NewDraftPage() {
   const [loading, setLoading] = useState(false);
 
   const teamNameSlots = useMemo(() => {
-    const next = [...teamNames];
-    next.length = teamCount;
-    return next.map((n) => n ?? "");
+    return Array.from({ length: teamCount }, (_, i) => teamNames[i] ?? "");
   }, [teamNames, teamCount]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+
+    const trimmedNames = teamNameSlots.map((n) => n.trim());
+    if (trimmedNames.some((n) => !n)) {
+      setError("Enter a name for every team.");
+      return;
+    }
+
+    setLoading(true);
 
     const supabase = createClient();
     const { data, error } = await supabase.rpc("create_draft", {
@@ -51,9 +53,9 @@ export default function NewDraftPage() {
       p_season: season,
       p_team_count: teamCount,
       p_round_count: roundCount,
-      p_scoring_format: scoringFormat,
+      p_scoring_format: "ppr",
       p_pick_timer_seconds_default: timerSeconds,
-      p_team_names: teamNameSlots.map((n) => n.trim() || null),
+      p_team_names: trimmedNames,
     });
 
     setLoading(false);
@@ -61,7 +63,7 @@ export default function NewDraftPage() {
       setError(error.message);
       return;
     }
-    router.push(`/draft/${data}/board`);
+    router.push(`/draft/${data}/settings`);
   }
 
   return (
@@ -133,26 +135,6 @@ export default function NewDraftPage() {
         </div>
 
         <div className="text-sm">
-          Scoring format
-          <div className="mt-1 flex gap-2">
-            {SCORING_FORMAT_OPTIONS.map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setScoringFormat(value)}
-                className={`flex-1 rounded-md border py-2 font-bold ${
-                  scoringFormat === value
-                    ? "border-emerald-500 bg-emerald-500 text-white"
-                    : "border-black/10 dark:border-white/10"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="text-sm">
           Pick timer
           <div className="mt-1 flex gap-2">
             {TIMER_DURATION_OPTIONS.map((s) => (
@@ -173,12 +155,13 @@ export default function NewDraftPage() {
         </div>
 
         <fieldset className="text-sm">
-          <legend className="mb-1">Team names (optional — can rename later)</legend>
+          <legend className="mb-1">Team names</legend>
           <div className="grid grid-cols-2 gap-2">
             {teamNameSlots.map((value, i) => (
               <input
                 key={i}
                 type="text"
+                required
                 value={value}
                 placeholder={`Team ${i + 1}`}
                 onChange={(e) => {

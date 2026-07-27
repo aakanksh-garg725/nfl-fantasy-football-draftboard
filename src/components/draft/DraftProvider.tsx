@@ -18,6 +18,7 @@ import { useDraftSoundCues } from "@/lib/hooks/useDraftSoundCues";
 import {
   mapDraftRow,
   mapPickRow,
+  mapTeamRow,
   mapTimerRow,
 } from "@/lib/draft/mappers";
 import type {
@@ -82,6 +83,7 @@ export function DraftProvider({
   const clockOffsetMs = useServerClockOffset();
 
   const [draft, setDraft] = useState(initial.draft);
+  const [teams, setTeams] = useState(initial.teams);
   const [timer, setTimer] = useState(initial.timer);
   const [picksById, setPicksById] = useState(
     () => new Map(initial.picks.map((p) => [p.id, p]))
@@ -148,6 +150,26 @@ export function DraftProvider({
           const row = payload.new as Parameters<typeof mapDraftRow>[0] | undefined;
           if (!row) return;
           setDraft(mapDraftRow(row));
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "teams",
+          filter: `draft_id=eq.${initial.draft.id}`,
+        },
+        (payload) => {
+          const row = payload.new as Parameters<typeof mapTeamRow>[0] | undefined;
+          if (!row) return;
+          const team = mapTeamRow(row);
+          setTeams((prev) => {
+            const next = prev.some((t) => t.id === team.id)
+              ? prev.map((t) => (t.id === team.id ? team : t))
+              : [...prev, team];
+            return next.sort((a, b) => a.slotNumber - b.slotNumber);
+          });
         }
       )
       .subscribe();
@@ -262,7 +284,7 @@ export function DraftProvider({
   const { whammy, dismiss: dismissWhammy } = useWhammy({
     draftId: initial.draft.id,
     currentOverallPick: draft.currentOverallPick,
-    teams: initial.teams,
+    teams,
   });
 
   // Hold the pick clock while the dare is up, so the team on the clock doesn't
@@ -287,7 +309,7 @@ export function DraftProvider({
 
   const value: DraftContextValue = {
     draft,
-    teams: initial.teams,
+    teams,
     picks: useMemo(() => Array.from(picksById.values()), [picksById]),
     playersById,
     byeWeeksByTeam: initial.byeWeeksByTeam,
