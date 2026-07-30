@@ -13,7 +13,17 @@ export type PlayerCardVariant = "board" | "pool";
 export interface PlayerCardProps {
   player: Player;
   byeWeek: number | null;
+  /**
+   * `board` cards call this on the whole card, if provided. `pool` cards
+   * never do — see `onDraftClick`.
+   */
   onClick?: () => void;
+  /**
+   * Pool-only: fired by the "Draft Player" button. Kept separate from
+   * `onClick` so pool cards can never be drafted by a stray tap on the card
+   * body — only the button drafts.
+   */
+  onDraftClick?: () => void;
   disabled?: boolean;
   className?: string;
   /** When set, the card is shown blurred with a "DRAFTED by ..." overlay and is never clickable. */
@@ -43,6 +53,7 @@ export function PlayerCard({
   player,
   byeWeek,
   onClick,
+  onDraftClick,
   disabled,
   className,
   draftedByTeamName,
@@ -51,7 +62,9 @@ export function PlayerCard({
   const isDst = player.position === "DST";
   const isPool = variant === "pool";
   const isDrafted = Boolean(draftedByTeamName);
-  const clickable = onClick && !isDrafted;
+  // Pool cards are never clickable themselves — drafting only happens
+  // through the "Draft Player" button, so a misclick on the card is a no-op.
+  const clickable = !isPool && onClick && !isDrafted;
   const Wrapper = clickable ? "button" : "div";
   // DST "names" are team names, which split into a city and a nickname — the
   // same two-tier shape a person's name takes, so the pool treats them alike.
@@ -68,16 +81,16 @@ export function PlayerCard({
         "relative h-20 w-full overflow-hidden rounded-lg border border-black/10 text-left shadow-sm dark:border-white/10",
         clickable && !disabled && "cursor-pointer hover:brightness-95",
         !clickable && "cursor-default",
-        disabled && !isDrafted && "opacity-60",
+        // Pool cards stay full-strength when it isn't your turn — only the
+        // Draft Player button dims — so browsing during someone else's pick
+        // doesn't look broken.
+        disabled && !isDrafted && !isPool && "opacity-60",
         className
       )}
     >
       <div
         style={{ background: positionCardBackground(player.position) }}
-        className={clsx(
-          "relative h-full w-full transition",
-          isDrafted && "blur-[2px]"
-        )}
+        className="relative h-full w-full transition"
       >
         {isPool ? (
           // Tighter vertical padding than the board's cells: three stacked
@@ -116,10 +129,31 @@ export function PlayerCard({
               </div>
             </div>
 
-            {/* Rendered even when there's no bye (free agents), so the name
-                band is the same height on every card in a row. */}
-            <div className="text-right text-[10px] leading-tight font-extrabold opacity-70">
-              {byeWeek ? `BYE ${byeWeek}` : ""}
+            {/* Bye week bottom-left, Draft Player button bottom-right — the
+                button is the only way to draft from this card, so a misclick
+                anywhere else on the card can't accidentally spend a pick. */}
+            <div className="flex items-end justify-between gap-1">
+              <span className="text-[10px] leading-none font-extrabold opacity-70">
+                {byeWeek ? `BYE ${byeWeek}` : ""}
+              </span>
+              {onDraftClick && !isDrafted && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDraftClick();
+                  }}
+                  disabled={disabled}
+                  className={clsx(
+                    "shrink-0 rounded px-1.5 py-0.5 text-[9px] leading-none font-black tracking-wide uppercase transition",
+                    disabled
+                      ? "cursor-not-allowed bg-black/10 text-black/30 dark:bg-white/10 dark:text-white/30"
+                      : "cursor-pointer bg-emerald-500 text-white hover:bg-emerald-400"
+                  )}
+                >
+                  Draft Player
+                </button>
+              )}
             </div>
           </div>
         ) : (
@@ -143,7 +177,9 @@ export function PlayerCard({
       </div>
 
       {isDrafted && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/45 px-2 text-center text-[11px] leading-tight font-bold text-white">
+        // Translucent, not blurred, so the player's name stays readable
+        // underneath — same treatment as the Start Draft overlay.
+        <div className="absolute inset-0 flex items-center justify-center bg-black/55 px-2 text-center text-[11px] leading-tight font-bold text-white">
           DRAFTED
           <br />
           by {draftedByTeamName}

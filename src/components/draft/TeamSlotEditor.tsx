@@ -265,6 +265,9 @@ export function TeamSlotEditor({
         const pendingInvite = invites.find(
           (inv) => inv.team_id === team.id && inv.status === "pending"
         );
+        const acceptedInvite = invites.find(
+          (inv) => inv.team_id === team.id && inv.status === "accepted"
+        );
         return (
           <div
             key={team.id}
@@ -303,23 +306,39 @@ export function TeamSlotEditor({
 
             <div className="flex w-64 shrink-0 flex-col items-start justify-center gap-1 text-xs">
               {team.ownerUserId ? (
-                <span className="truncate font-bold text-emerald-600 dark:text-emerald-400">
-                  Claimed by {ownerNames[team.ownerUserId] ?? "a virtual drafter"}
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className="truncate font-bold text-emerald-600 dark:text-emerald-400">
+                    Claimed by {ownerNames[team.ownerUserId] ?? "a virtual drafter"}
+                  </span>
+                  {/* Revoking an already-accepted invite still works while the
+                      draft is in setup — it un-claims the seat, same as any
+                      other setup-time control. */}
+                  {canEditTeams && acceptedInvite && (
+                    <button
+                      type="button"
+                      onClick={() => handleRevokeInvite(acceptedInvite.id)}
+                      className="shrink-0 rounded-md bg-red-500/10 px-2 py-1 font-bold text-red-600 dark:text-red-400"
+                    >
+                      Revoke
+                    </button>
+                  )}
+                </div>
               ) : pendingInvite ? (
                 <div className="flex items-center gap-1">
                   <span className="truncate text-black/60 dark:text-white/60">
                     Invited {pendingInvite.email}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => handleRevokeInvite(pendingInvite.id)}
-                    className="shrink-0 rounded-md bg-red-500/10 px-2 py-1 font-bold text-red-600 dark:text-red-400"
-                  >
-                    Revoke
-                  </button>
+                  {canEditTeams && (
+                    <button
+                      type="button"
+                      onClick={() => handleRevokeInvite(pendingInvite.id)}
+                      className="shrink-0 rounded-md bg-red-500/10 px-2 py-1 font-bold text-red-600 dark:text-red-400"
+                    >
+                      Revoke
+                    </button>
+                  )}
                 </div>
-              ) : (
+              ) : canEditTeams ? (
                 <>
                   <div className="flex w-full items-center gap-1">
                     <input
@@ -350,6 +369,8 @@ export function TeamSlotEditor({
                     <span className="text-red-500">{inviteErrors[team.id]}</span>
                   )}
                 </>
+              ) : (
+                <span className="text-black/30 dark:text-white/30">Unclaimed</span>
               )}
             </div>
           </div>

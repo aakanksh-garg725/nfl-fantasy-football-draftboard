@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import clsx from "clsx";
 import { useDraft } from "./DraftProvider";
 import { positionAccentColor } from "@/lib/draft/positionStyle";
 import { splitPlayerName } from "@/lib/draft/playerName";
@@ -37,6 +36,14 @@ interface TickerEntry {
  * Rotation only kicks in when the picks actually overflow the strip — early in
  * a draft, four selections sit still rather than drifting across a mostly empty
  * bar with a visible gap chasing them.
+ *
+ * The scroll offset lives in a ref and is advanced every frame by a
+ * requestAnimationFrame loop, rather than as a CSS animation whose duration is
+ * recomputed from content width. A new pick changes that width, and a CSS
+ * animation restarts from 0% the instant its duration changes — so every pick
+ * would snap the strip back to the start. Driving position from an
+ * ever-incrementing ref sidesteps that: new entries append to the run, the
+ * loop keeps reading the same offset it was at, and motion never resets.
  */
 export function RecentPicksTicker() {
   const { picks, teams, playersById } = useDraft();
@@ -65,24 +72,35 @@ export function RecentPicksTicker() {
   }, [picks, teams, playersById]);
 
   const viewportRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
   const runRef = useRef<HTMLDivElement>(null);
-  const [lapMs, setLapMs] = useState<number | null>(null);
+  const [rotating, setRotating] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  // Pixels scrolled so far. Deliberately outside React state — it must survive
+  // re-renders untouched (including the ones triggered by a new pick) so the
+  // strip never jumps back to translateX(0).
+  const offsetRef = useRef(0);
+  const pausedRef = useRef(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
 
   // Measured rather than guessed from the entry count: chip width is fixed but
   // the strip's own width isn't, so whether the picks overflow depends on the
-  // window. Re-runs on resize via the observer, and on every new pick via deps.
+  // window. Re-runs on resize via the observer, and on every new pick via deps
+  // — but only ever flips a boolean, never touches offsetRef.
   useEffect(() => {
     const viewport = viewportRef.current;
     const run = runRef.current;
     if (!viewport || !run) return;
 
     const measure = () => {
-      const runWidth = run.scrollWidth;
-      setLapMs(
-        runWidth > viewport.clientWidth
-          ? (runWidth / SCROLL_PX_PER_SECOND) * 1000
-          : null
-      );
+      setRotating(!reducedMotion && run.scrollWidth > viewport.clientWidth);
     };
     measure();
 
@@ -90,12 +108,42 @@ export function RecentPicksTicker() {
     observer.observe(viewport);
     observer.observe(run);
     return () => observer.disconnect();
-  }, [entries]);
+  }, [entries, reducedMotion]);
+
+  // The actual motion. Starts/stops only when `rotating` flips, so a steady
+  // stream of new picks — the common case once the strip overflows — never
+  // interrupts this effect or the offset it's carrying forward.
+  useEffect(() => {
+    if (!rotating) return;
+    const track = trackRef.current;
+    const run = runRef.current;
+    if (!track || !run) return;
+
+    let frameId: number;
+    let lastTime: number | null = null;
+
+    const step = (time: number) => {
+      if (lastTime === null) lastTime = time;
+      const dt = time - lastTime;
+      lastTime = time;
+
+      if (!pausedRef.current) {
+        // One "lap" is the width of a single (non-duplicated) run. Wrapping
+        // here, rather than at the doubled track width, keeps the modulo
+        // cheap and correct even as new picks extend the run.
+        const lapWidth = run.scrollWidth;
+        offsetRef.current = (offsetRef.current + (SCROLL_PX_PER_SECOND * dt) / 1000) % lapWidth;
+        track.style.transform = `translateX(-${offsetRef.current}px)`;
+      }
+
+      frameId = requestAnimationFrame(step);
+    };
+    frameId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frameId);
+  }, [rotating]);
 
   // Nothing has happened yet — don't spend a strip of the board saying so.
   if (entries.length === 0) return null;
-
-  const rotating = lapMs !== null;
 
   return (
     <div className="flex shrink-0 items-stretch border-t border-white/10 bg-neutral-900 text-white">
@@ -108,11 +156,18 @@ export function RecentPicksTicker() {
         </span>
       </div>
 
-      <div ref={viewportRef} className="ticker-viewport min-w-0 flex-1">
-        <div
-          className={clsx("flex w-max", rotating && "ticker-track")}
-          style={rotating ? { animationDuration: `${lapMs}ms` } : undefined}
-        >
+      <div
+        ref={viewportRef}
+        className="min-w-0 flex-1"
+        style={{ overflow: reducedMotion ? "auto" : "hidden" }}
+        onMouseEnter={() => {
+          pausedRef.current = true;
+        }}
+        onMouseLeave={() => {
+          pausedRef.current = false;
+        }}
+      >
+        <div ref={trackRef} className="flex w-max">
           <div ref={runRef} className="flex gap-10 pr-10">
             {entries.map((entry) => (
               <TickerChip key={entry.pick.id} entry={entry} />
@@ -123,7 +178,7 @@ export function RecentPicksTicker() {
               over to at the seam. Hidden from assistive tech — it's the same
               picks a second time, which is a visual trick, not information. */}
           {rotating && (
-            <div aria-hidden className="ticker-duplicate flex gap-10 pr-10">
+            <div aria-hidden className="flex gap-10 pr-10">
               {entries.map((entry) => (
                 <TickerChip key={entry.pick.id} entry={entry} />
               ))}

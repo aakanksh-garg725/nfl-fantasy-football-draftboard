@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useDraft } from "@/components/draft/DraftProvider";
+import { findOwnSkippedPick } from "@/lib/draft/turn";
 import { TimerHeaderBar } from "@/components/draft/TimerHeaderBar";
 import { DraftSearchBar } from "@/components/draft/DraftSearchBar";
 import { DraftBoardGrid } from "@/components/draft/DraftBoardGrid";
@@ -28,6 +29,7 @@ export default function BoardPage() {
     clearError,
     startDraft,
     makePick,
+    makeSkippedPick,
     commissionerEditPick,
     startTimer,
     pauseTimer,
@@ -51,9 +53,11 @@ export default function BoardPage() {
   const onClockTeam = currentPick
     ? teams.find((t) => t.id === currentPick.teamId)
     : undefined;
-  const canDraftFromSearch = Boolean(
-    !isLocked && currentPick && (isCommissioner || currentPick.teamId === myTeamId)
+  const onClock = Boolean(
+    currentPick && (isCommissioner || currentPick.teamId === myTeamId)
   );
+  const mySkippedPick = myTeamId ? findOwnSkippedPick(picks, myTeamId) : null;
+  const canDraftFromSearch = Boolean(!isLocked && (onClock || mySkippedPick));
 
   const previousMadePick = [...sortedPicks]
     .reverse()
@@ -84,13 +88,20 @@ export default function BoardPage() {
     return map;
   }, [picks, teams]);
 
+  // Only reachable for a skipped pick — EmptyPickCell never wires this up for
+  // the current (on-the-clock) cell, so the board itself can't be used to
+  // spend a live pick.
   async function handleEmptyCellClick(pick: Pick) {
     if (!isCommissioner || isLocked) return;
     setEditingPick(pick);
   }
 
   async function handleDraftFromSearch(playerId: string) {
-    await makePick(playerId);
+    if (onClock) {
+      await makePick(playerId);
+    } else {
+      await makeSkippedPick(playerId);
+    }
   }
 
   async function handleSelectPlayerForEditingPick(playerId: string) {

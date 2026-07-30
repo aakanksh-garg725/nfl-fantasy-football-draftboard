@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDraft } from "@/components/draft/DraftProvider";
+import { findOwnSkippedPick } from "@/lib/draft/turn";
 import { TimerHeaderBar } from "@/components/draft/TimerHeaderBar";
 import { AvailablePlayersPanel } from "@/components/draft/AvailablePlayersPanel";
 import { TimerEditDialog } from "@/components/draft/TimerEditDialog";
@@ -23,6 +24,7 @@ export default function PlayersPage() {
     lastError,
     clearError,
     makePick,
+    makeSkippedPick,
     startTimer,
     pauseTimer,
     restartTimer,
@@ -72,9 +74,11 @@ export default function PlayersPage() {
   }, [picks, teams]);
 
   const isLocked = draft.status === "setup";
-  const canDraft = Boolean(
-    !isLocked && currentPick && (isCommissioner || currentPick.teamId === myTeamId)
+  const onClock = Boolean(
+    currentPick && (isCommissioner || currentPick.teamId === myTeamId)
   );
+  const mySkippedPick = myTeamId ? findOwnSkippedPick(picks, myTeamId) : null;
+  const canDraft = Boolean(!isLocked && (onClock || mySkippedPick));
 
   return (
     <>
@@ -111,6 +115,11 @@ export default function PlayersPage() {
         <div className="bg-amber-500/10 px-4 py-2 text-center text-sm text-amber-600 dark:text-amber-400">
           The draft hasn&apos;t started yet — head to the Board tab to press Start Draft.
         </div>
+      ) : mySkippedPick && !onClock ? (
+        <div className="bg-amber-500/10 px-4 py-2 text-center text-sm text-amber-600 dark:text-amber-400">
+          Your Round {mySkippedPick.round}, Pick {mySkippedPick.pickInRound} was skipped —
+          search and draft now to fill it in.
+        </div>
       ) : (
         !canDraft &&
         currentPick && (
@@ -128,7 +137,7 @@ export default function PlayersPage() {
           draftedByPlayerId={draftedByPlayerId}
           canDraft={canDraft}
           onDraftPlayer={async (playerId) => {
-            const ok = await makePick(playerId);
+            const ok = onClock ? await makePick(playerId) : await makeSkippedPick(playerId);
             if (ok) router.push(`/draft/${draft.id}/board`);
           }}
         />

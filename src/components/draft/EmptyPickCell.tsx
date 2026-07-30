@@ -7,6 +7,7 @@ export interface EmptyPickCellProps {
   /** true when this is the current overall pick (the one on the clock) */
   isCurrent: boolean;
   status: PickStatus;
+  /** Only ever wired up for a `skipped` cell — see the isCurrent branch below. */
   onClick?: () => void;
 }
 
@@ -18,17 +19,16 @@ export function EmptyPickCell({
   onClick,
 }: EmptyPickCellProps) {
   if (isCurrent) {
+    // Not a button: the pick on the clock is only made from the search bar or
+    // player pool, never by clicking the board — a board click is too easy to
+    // land by accident on a cell that spends a real pick.
     return (
-      <button
-        type="button"
-        onClick={onClick}
-        className="flex h-20 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-      >
+      <div className="flex h-20 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
         <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
         <span className="text-xs font-bold tracking-wide uppercase">
           Picking
         </span>
-      </button>
+      </div>
     );
   }
 

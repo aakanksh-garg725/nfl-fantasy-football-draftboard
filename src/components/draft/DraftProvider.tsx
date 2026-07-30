@@ -56,6 +56,8 @@ interface DraftContextValue {
   clearError: () => void;
   startDraft: () => Promise<void>;
   makePick: (playerId: string) => Promise<boolean>;
+  /** Fills the caller's own skipped pick — see `findOwnSkippedPick`. */
+  makeSkippedPick: (playerId: string) => Promise<boolean>;
   commissionerEditPick: (pickId: string, playerId: string | null) => Promise<boolean>;
   startTimer: () => Promise<void>;
   pauseTimer: () => Promise<void>;
@@ -114,6 +116,21 @@ export function DraftProvider({
           filter: `draft_id=eq.${initial.draft.id}`,
         },
         (payload) => {
+          // Roster edits rebuild the pick skeleton and can drop rows past a
+          // shrunk round count — without handling DELETE here those rows
+          // would linger in every connected client until a page reload.
+          if (payload.eventType === "DELETE") {
+            const deletedId = (payload.old as { id?: string } | undefined)?.id;
+            if (!deletedId) return;
+            setPicksById((prev) => {
+              if (!prev.has(deletedId)) return prev;
+              const next = new Map(prev);
+              next.delete(deletedId);
+              return next;
+            });
+            return;
+          }
+
           const row = payload.new as Parameters<typeof mapPickRow>[0] | undefined;
           if (!row) return;
           const pick = mapPickRow(row);
@@ -243,6 +260,21 @@ export function DraftProvider({
     [supabase, initial.draft.id]
   );
 
+  const makeSkippedPick = useCallback(
+    async (playerId: string) => {
+      const { error } = await supabase.rpc("make_skipped_pick", {
+        p_draft_id: initial.draft.id,
+        p_player_id: playerId,
+      });
+      if (error) {
+        setLastError(error.message);
+        return false;
+      }
+      return true;
+    },
+    [supabase, initial.draft.id]
+  );
+
   const commissionerEditPick = useCallback(
     async (pickId: string, playerId: string | null) => {
       const { error } = await supabase.rpc("commissioner_edit_pick", {
@@ -301,6 +333,7 @@ export function DraftProvider({
     clearError,
     startDraft,
     makePick,
+    makeSkippedPick,
     commissionerEditPick,
     startTimer,
     pauseTimer,

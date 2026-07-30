@@ -35,6 +35,7 @@ Supabase (Postgres + Auth + Realtime). See README.md for setup/features.
   `x-admin-secret` header matching `ADMIN_IMPORT_SECRET`; they use the
   service-role Supabase client (`src/lib/supabase/admin.ts`) since they run
   without a signed-in commissioner session.
+- Run all Supabase migrations through the Supabase MCP tools
 
 ## Conventions
 

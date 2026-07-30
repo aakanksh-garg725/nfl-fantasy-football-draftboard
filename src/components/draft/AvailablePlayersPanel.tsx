@@ -166,7 +166,7 @@ export function AvailablePlayersPanel({
                         disabled={!canDraft}
                         draftedByTeamName={draftedByTeamName}
                         variant="pool"
-                        onClick={
+                        onDraftClick={
                           onDraftPlayer
                             ? () => onDraftPlayer(player.id)
                             : undefined

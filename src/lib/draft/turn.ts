@@ -1,12 +1,5 @@
 import type { Pick } from "./types";
 
-/**
- * How many picks out a team starts getting warned. Three is the whole point of
- * the feature — far enough out to go look at the board, close enough that the
- * warning still means something.
- */
-export const TURN_WARNING_LEAD = 3;
-
 export interface UpcomingTurn {
   /** 0 when the team is on the clock right now, 1 when they're next, and so on. */
   picksAway: number;
@@ -40,4 +33,24 @@ export function findUpcomingTurn(
 
   if (!next) return null;
   return { picksAway: next.overallPickNumber - currentOverallPick, pick: next };
+}
+
+/**
+ * A team's own skipped pick still waiting to be filled in, if it has one.
+ *
+ * The draft's cursor already moved past a skipped pick the moment it was
+ * skipped, so the team is never "on the clock" for it again — this is the
+ * only way the search bar / player pool know to route a drafter's next
+ * selection into that old slot instead of expecting them to be up next.
+ * Oldest first, in case a team somehow racks up more than one.
+ */
+export function findOwnSkippedPick(picks: Pick[], teamId: string): Pick | null {
+  let earliest: Pick | null = null;
+
+  for (const pick of picks) {
+    if (pick.teamId !== teamId || pick.status !== "skipped") continue;
+    if (!earliest || pick.overallPickNumber < earliest.overallPickNumber) earliest = pick;
+  }
+
+  return earliest;
 }
