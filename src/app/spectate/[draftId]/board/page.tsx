@@ -32,7 +32,7 @@ export default function SpectateBoardPage() {
         previousPick={header.previousPick}
         isCommissioner={false}
       />
-      <div className="min-h-0 flex-1 overflow-auto p-3">
+      <div className="min-h-0 flex-1 overflow-auto px-3 pb-3">
         <DraftBoardGrid
           teams={teams}
           roundCount={draft.roundCount}

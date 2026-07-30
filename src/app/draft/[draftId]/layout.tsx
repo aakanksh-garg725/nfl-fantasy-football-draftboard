@@ -34,6 +34,7 @@ export default async function DraftLayout({
     { data: playerRows },
     { data: byeWeekRows },
     { data: memberRow },
+    { data: profileRow },
   ] = await Promise.all([
     supabase.from("drafts").select("*").eq("id", draftId).maybeSingle(),
     supabase.from("teams").select("*").eq("draft_id", draftId).order("slot_number"),
@@ -47,6 +48,7 @@ export default async function DraftLayout({
       .eq("draft_id", draftId)
       .eq("user_id", user.id)
       .maybeSingle(),
+    supabase.from("profiles").select("display_name, email").eq("id", user.id).maybeSingle(),
   ]);
 
   if (!draftRow || !timerRow) notFound();
@@ -70,7 +72,11 @@ export default async function DraftLayout({
       }}
     >
       <div className="flex h-screen flex-col overflow-hidden">
-        <DraftNav draftId={draftId} isCommissioner={memberRow?.role === "commissioner"} />
+        <DraftNav
+          draftId={draftId}
+          isCommissioner={memberRow?.role === "commissioner"}
+          userName={profileRow?.display_name || profileRow?.email || "You"}
+        />
         {/* Sits in the flex column rather than floating over it: when your pick
             is close the bar is worth the few pixels, and it renders nothing the
             rest of the time. Above {children} so it's on the board and the

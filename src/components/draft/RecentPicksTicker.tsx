@@ -7,15 +7,6 @@ import { splitPlayerName } from "@/lib/draft/playerName";
 import type { DraftTeam, Pick, Player } from "@/lib/draft/types";
 
 /**
- * How many selections the ticker holds.
- *
- * It's a "what just happened" strip, not an archive — the board above already
- * shows every pick of the draft, laid out by round and team. Capping it keeps
- * one lap of the rotation short enough to be worth waiting through.
- */
-const MAX_ENTRIES = 20;
-
-/**
  * Rotation speed. Fixed in pixels per second rather than as a fixed lap time so
  * the ticker reads at the same pace all draft long — a lap timed to look right
  * at four picks would be a blur at twenty.
@@ -29,13 +20,15 @@ interface TickerEntry {
 }
 
 /**
- * The broadcast-style selection ticker along the bottom of the board: the most
- * recent pick leads, and the strip rotates left to right the way a draft-night
- * lower third does.
+ * The broadcast-style selection ticker along the bottom of the board: every
+ * pick of the draft, oldest to newest, rotating left to right the way a
+ * draft-night lower third does. Holds the whole draft rather than a recent
+ * window — once it scrolls past the most recent pick, the loop (see below)
+ * carries it back around to 1.1 and it runs through again.
  *
  * Rotation only kicks in when the picks actually overflow the strip — early in
- * a draft, four selections sit still rather than drifting across a mostly empty
- * bar with a visible gap chasing them.
+ * a draft, a handful of selections sit still rather than drifting across a
+ * mostly empty bar with a visible gap chasing them.
  *
  * The scroll offset lives in a ref and is advanced every frame by a
  * requestAnimationFrame loop, rather than as a CSS animation whose duration is
@@ -44,6 +37,10 @@ interface TickerEntry {
  * would snap the strip back to the start. Driving position from an
  * ever-incrementing ref sidesteps that: new entries append to the run, the
  * loop keeps reading the same offset it was at, and motion never resets.
+ * That same ref wrapping modulo the run's width (see the step function below)
+ * is what carries the strip from the last pick back to 1.1 — the run is drawn
+ * twice back to back, so the wrap lands on a frame identical to the one it
+ * started from and the restart itself is invisible.
  */
 export function RecentPicksTicker() {
   const { picks, teams, playersById } = useDraft();
@@ -53,11 +50,7 @@ export function RecentPicksTicker() {
 
     return picks
       .filter((p) => p.status === "made" && p.playerId)
-      // Newest first to pick the window, then flipped back into draft order so
-      // the strip reads oldest -> newest with the latest selection trailing.
-      .sort((a, b) => b.overallPickNumber - a.overallPickNumber)
-      .slice(0, MAX_ENTRIES)
-      .reverse()
+      .sort((a, b) => a.overallPickNumber - b.overallPickNumber)
       .map((pick) => ({
         pick,
         player: playersById.get(pick.playerId as string),
@@ -195,13 +188,13 @@ function TickerChip({ entry }: { entry: TickerEntry }) {
   const name = splitPlayerName(player.fullName);
 
   return (
-    <div className="flex w-44 shrink-0 items-center gap-2 py-2">
+    <div className="flex w-44 shrink-0 items-center gap-2 py-1">
       {/* Position colour as a stripe rather than a fill: at this size a tinted
           chip would fight the text, but the stripe still lets you read the run
           of positions along the ticker at a glance. */}
       <span
         aria-hidden
-        className="h-8 w-1 shrink-0 rounded-full"
+        className="h-6 w-1 shrink-0 rounded-full"
         style={{ background: positionAccentColor(player.position) }}
       />
 

@@ -56,7 +56,7 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      <PendingInvites rows={inviteRows} />
+      <PendingInvites rows={inviteRows} userId={user?.id ?? ""} />
 
       {error && <p className="text-sm text-red-500">{error.message}</p>}
 

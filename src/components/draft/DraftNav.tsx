@@ -9,9 +9,11 @@ import { createClient } from "@/lib/supabase/client";
 export function DraftNav({
   draftId,
   isCommissioner,
+  userName,
 }: {
   draftId: string;
   isCommissioner: boolean;
+  userName: string;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -65,48 +67,57 @@ export function DraftNav({
         </Link>
       ))}
 
-      {/* Only drafters leave; a commissioner leaving would orphan the draft, so
-          they delete it from the dashboard instead. */}
-      {!isCommissioner && (
-        <div className="ml-auto flex items-center gap-1.5">
-          {leaveError && (
-            <span className="max-w-[16rem] truncate text-xs text-red-500" title={leaveError}>
-              {leaveError}
-            </span>
-          )}
-          {confirmingLeave ? (
-            <>
-              <span className="text-xs text-black/60 dark:text-white/60">
-                Leave this draft?
+      <div className="ml-auto flex items-center gap-3">
+        {/* Only drafters leave; a commissioner leaving would orphan the draft, so
+            they delete it from the dashboard instead. */}
+        {!isCommissioner && (
+          <div className="flex items-center gap-1.5">
+            {leaveError && (
+              <span className="max-w-[16rem] truncate text-xs text-red-500" title={leaveError}>
+                {leaveError}
               </span>
+            )}
+            {confirmingLeave ? (
+              <>
+                <span className="text-xs text-black/60 dark:text-white/60">
+                  Leave this draft?
+                </span>
+                <button
+                  type="button"
+                  disabled={leaving}
+                  onClick={handleLeave}
+                  className="rounded-md bg-red-500 px-2 py-1 text-xs font-bold text-white disabled:opacity-50"
+                >
+                  {leaving ? "Leaving…" : "Confirm"}
+                </button>
+                <button
+                  type="button"
+                  disabled={leaving}
+                  onClick={() => setConfirmingLeave(false)}
+                  className="rounded-md bg-black/5 px-2 py-1 text-xs font-bold disabled:opacity-50 dark:bg-white/10"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
               <button
                 type="button"
-                disabled={leaving}
-                onClick={handleLeave}
-                className="rounded-md bg-red-500 px-2 py-1 text-xs font-bold text-white disabled:opacity-50"
+                onClick={() => setConfirmingLeave(true)}
+                className="rounded-md bg-black/5 px-2 py-1 text-xs font-bold text-red-600 hover:bg-red-500/10 dark:bg-white/10 dark:text-red-400"
               >
-                {leaving ? "Leaving…" : "Confirm"}
+                Leave draft
               </button>
-              <button
-                type="button"
-                disabled={leaving}
-                onClick={() => setConfirmingLeave(false)}
-                className="rounded-md bg-black/5 px-2 py-1 text-xs font-bold disabled:opacity-50 dark:bg-white/10"
-              >
-                Cancel
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirmingLeave(true)}
-              className="rounded-md bg-black/5 px-2 py-1 text-xs font-bold text-red-600 hover:bg-red-500/10 dark:bg-white/10 dark:text-red-400"
-            >
-              Leave draft
-            </button>
-          )}
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-col items-end leading-tight">
+          <span className="max-w-[12rem] truncate text-sm font-bold">{userName}</span>
+          <span className="text-xs text-black/50 dark:text-white/50">
+            {isCommissioner ? "Commissioner" : "Drafter"}
+          </span>
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -32,6 +32,12 @@ export function SpectateNav({ draftId }: { draftId: string }) {
           {tab.label}
         </Link>
       ))}
+
+      {/* No account behind a spectate link (spectator_enabled is a public,
+          read-only view), so there's no name to show — just the role. */}
+      <span className="ml-auto text-xs font-bold text-black/50 dark:text-white/50">
+        Spectator
+      </span>
     </div>
   );
 }

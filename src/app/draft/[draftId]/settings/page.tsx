@@ -84,17 +84,14 @@ export default function SettingsPage() {
           <input
             type="checkbox"
             defaultChecked={draft.spectatorEnabled}
-            disabled={draft.status !== "setup"}
             onChange={(e) => handleSpectatorToggle(e.target.checked)}
-            className="disabled:opacity-50"
           />
           Allow anyone with the link to view this draft (read-only, no account needed)
         </label>
-        {draft.status !== "setup" && (
-          <p className="mt-1 text-xs text-black/40 dark:text-white/40">
-            Locked once the draft has started.
-          </p>
-        )}
+        <p className="mt-1 text-xs text-black/40 dark:text-white/40">
+          Stays available for the whole draft — unlike team names and roster
+          settings, this one never locks.
+        </p>
         {draft.spectatorEnabled && (
           <div className="mt-2 flex items-center gap-2">
             <code className="block flex-1 truncate rounded bg-black/5 px-2 py-1 text-xs dark:bg-white/10">

@@ -28,56 +28,63 @@ export function RosterBoardGrid({
     ])
   );
 
+  const columnTemplate = `72px repeat(${sortedTeams.length}, minmax(0, 1fr))`;
+
   return (
-    <div
-      className="grid w-full gap-1 p-2"
-      style={{
-        gridTemplateColumns: `72px repeat(${sortedTeams.length}, minmax(0, 1fr))`,
-      }}
-    >
-      <div />
-      {sortedTeams.map((team) => (
-        <div
-          key={team.id}
-          className="truncate rounded-md bg-black/5 px-2 py-1.5 text-center text-xs font-bold tracking-wide uppercase dark:bg-white/10"
-        >
-          {team.teamName}
+    <div className="w-full px-2 pb-2">
+      {/* One continuous, opaque bar — not per-cell backgrounds — so there's
+          no seam for a scrolled-past roster row to show through, either
+          between team names or in the space above them. See DraftBoardGrid's
+          matching header for the full rationale. */}
+      <div className="sticky top-0 z-10 bg-[var(--background)] pt-5 pb-1">
+        <div className="grid gap-1" style={{ gridTemplateColumns: columnTemplate }}>
+          <div />
+          {sortedTeams.map((team) => (
+            <div
+              key={team.id}
+              className="truncate rounded-md bg-black/5 px-2 py-1.5 text-center text-xs font-bold tracking-wide uppercase dark:bg-white/10"
+            >
+              {team.teamName}
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
 
-      {slots.map((slot) => (
-        <Fragment key={slot.key}>
-          <div className="flex items-center justify-center text-center text-xs font-bold text-black/40 dark:text-white/40">
-            {slot.label}
-          </div>
-          {sortedTeams.map((team) => {
-            const playerId = assignedByTeam.get(team.id)?.get(slot.key);
-            const player = playerId ? playersById.get(playerId) : undefined;
+      <div className="grid gap-1" style={{ gridTemplateColumns: columnTemplate }}>
+        {slots.map((slot) => (
+          <Fragment key={slot.key}>
+            <div className="flex items-center justify-center text-center text-xs font-bold text-black/40 dark:text-white/40">
+              {slot.label}
+            </div>
+            {sortedTeams.map((team) => {
+              const playerId = assignedByTeam.get(team.id)?.get(slot.key);
+              const player = playerId ? playersById.get(playerId) : undefined;
 
-            if (player) {
-              const byeWeek = player.nflTeam
-                ? (byeWeeksByTeam.get(player.nflTeam) ?? null)
-                : null;
+              if (player) {
+                const byeWeek = player.nflTeam
+                  ? (byeWeeksByTeam.get(player.nflTeam) ?? null)
+                  : null;
+                return (
+                  <PlayerCard
+                    key={`${slot.key}-${team.id}`}
+                    player={player}
+                    byeWeek={byeWeek}
+                  />
+                );
+              }
+
               return (
-                <PlayerCard
+                <div
                   key={`${slot.key}-${team.id}`}
-                  player={player}
-                  byeWeek={byeWeek}
-                />
+                  className="flex h-20 w-full items-center justify-center rounded-lg border border-black/5 bg-black/5 text-xs font-bold tracking-wide text-black/30 uppercase dark:border-white/5 dark:bg-white/5 dark:text-white/25"
+                >
+                  {slot.label}
+                </div>
               );
-            }
-
-            return (
-              <div
-                key={`${slot.key}-${team.id}`}
-                className="flex h-20 w-full items-center justify-center rounded-lg border border-black/5 bg-black/5 text-xs font-bold tracking-wide text-black/30 uppercase dark:border-white/5 dark:bg-white/5 dark:text-white/25"
-              >
-                {slot.label}
-              </div>
-            );
-          })}
-        </Fragment>
-      ))}
+            })}
+          </Fragment>
+        ))}
+      </div>
     </div>
   );
 }

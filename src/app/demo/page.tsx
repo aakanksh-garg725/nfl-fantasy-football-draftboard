@@ -86,7 +86,7 @@ export default function DemoPage() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto p-3">
+      <div className="flex-1 overflow-auto px-3 pb-3">
         {view === "board" ? (
           <DraftBoardGrid
             teams={mockTeams}
